@@ -1,0 +1,248 @@
+Project Structure for: /home/pirat/Desktop/pyth/scraper
+==================================================
+
+Directory Structure:
+--------------------
+│   ├── docker-compose.prod.yml
+│   ├── docker-compose.yml
+├── .github/
+│   ├── workflows/
+│   │   ├── deploy.yml
+
+File Contents:
+==================================================
+
+File: docker-compose.prod.yml
+-----------------------------
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: redis-container
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  django:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: app-image
+    container_name: django-container
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - static_volume:/app/static
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  celery_worker:
+    image: app-image
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - django
+      - postgres
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.65'  
+          memory: 812M
+    command: celery -A backend worker --concurrency=1
+    restart: unless-stopped
+
+  celery_beat:
+    image: app-image
+    container_name: celery-beat-container
+    command: celery -A backend beat -l info
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - django
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  flower:
+    image: app-image
+    container_name: flower-container
+    command: celery -A backend flower --url-prefix=/monitoring
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: frontend-image
+    container_name: frontend-container
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:80"
+    depends_on:
+      - django
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-container
+    volumes:
+      - static_volume:/usr/share/nginx/html/static
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+    depends_on:
+      - django
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+
+
+
+==================================================
+
+File: docker-compose.yml
+------------------------
+
+services:
+  django:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    image: app-image  
+    container_name: django-container
+    command: python manage.py runserver 0.0.0.0:8000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.6' 
+          memory: 612M
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-container
+    env_file:
+    - ./backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # celery_worker:
+  #   image: app-image
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     - django
+  #     - postgres
+  #     - redis
+    
+  #   command: celery -A backend worker --concurrency=1
+  #   restart: unless-stopped
+
+  # celery_beat:
+  #   image: app-image
+  #   container_name: celery-beat-container
+  #   command: celery -A backend beat -l info
+  #   volumes:
+  #     - ./backend:/app
+  #   depends_on:
+  #     - django
+  #     - postgres
+  #     - redis
+  #   restart: unless-stopped
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: frontend-image
+    container_name: frontend-container
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - django
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+==================================================
+
+File: .github/workflows/deploy.yml
+----------------------------------
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }} 
+          script: |
+            cd /home/deploy/apps/scraper
+            git pull
+            docker compose -f docker-compose.prod.yml build 
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+==================================================
+

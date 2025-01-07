@@ -1,0 +1,4144 @@
+Project Structure for: /home/pirat/Desktop/pyth/scraper/frontend
+==================================================
+
+Directory Structure:
+--------------------
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── nginx.conf
+│   ├── package.json
+│   ├── vite.config.js
+├── src/
+│   ├── App.jsx
+│   ├── api.js
+│   ├── constants.js
+│   ├── main.jsx
+│   ├── contexts/
+│   │   ├── LanguageContext.jsx
+│   ├── styles/
+│   │   ├── Base.css
+│   │   ├── Dashboard.css
+│   │   ├── FilterPanel.css
+│   │   ├── Form.css
+│   │   ├── Job.css
+│   │   ├── JobsPage.css
+│   │   ├── LanguageToggle.css
+│   │   ├── Navbar.css
+│   │   ├── NotFound.css
+│   │   ├── Pagination.css
+│   │   ├── Skills.css
+│   │   ├── SkillsTable.css
+│   │   ├── StatsCard.css
+│   │   ├── StatsRow.css
+│   │   ├── ThemeToggle.css
+│   │   ├── applications/
+│   │   │   ├── Applications.css
+│   │   │   ├── Buttons.css
+│   │   │   ├── HeartButton.css
+│   │   │   ├── Notes.css
+│   │   │   ├── StatusButtons.css
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useFilterData.js
+│   │   ├── useFilterHandlers.js
+│   │   ├── useMobileHandler.js
+│   │   ├── useTheme.js
+│   ├── components/
+│   │   ├── ApplyButton.jsx
+│   │   ├── FilterPanel.jsx
+│   │   ├── FilterSection.jsx
+│   │   ├── Form.jsx
+│   │   ├── Job.jsx
+│   │   ├── JobApplications.jsx
+│   │   ├── LanguageToggle.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── Pagination.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── ThemeToggle.jsx
+│   │   ├── dashboard/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── SkillsTable.jsx
+│   │   │   ├── StatsCard.jsx
+│   │   │   ├── StatsRow.jsx
+│   ├── config/
+│   │   ├── DateFormater.js
+│   │   ├── filterConfig.js
+│   │   ├── translations.js
+│   ├── pages/
+│   │   ├── Applications.jsx
+│   │   ├── Home.jsx
+│   │   ├── JobsPage.jsx
+│   │   ├── Login.jsx
+│   │   ├── NotFound.jsx
+│   │   ├── Register.jsx
+├── public/
+
+File Contents:
+==================================================
+
+File: .env.example
+------------------
+VITE_API_URL=
+DEBUG=
+
+==================================================
+
+File: Dockerfile
+----------------
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host"]
+
+==================================================
+
+File: eslint.config.js
+----------------------
+import js from '@eslint/js'
+import globals from 'globals'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    settings: { react: { version: '18.3' } },
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...react.configs.recommended.rules,
+      ...react.configs['jsx-runtime'].rules,
+      ...reactHooks.configs.recommended.rules,
+      'react/jsx-no-target-blank': 'off',
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+
+==================================================
+
+File: index.html
+----------------
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/activity.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rynek pracy IT</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+==================================================
+
+File: nginx.conf
+----------------
+server {
+    listen 80;
+    server_name localhost;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+
+==================================================
+
+File: package.json
+------------------
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dompurify": "^3.1.7",
+    "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.456.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^9.13.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.11.0",
+    "vite": "^5.4.10"
+  }
+}
+
+==================================================
+
+File: vite.config.js
+--------------------
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+
+==================================================
+
+File: src/App.jsx
+-----------------
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
+import JobsPage from "./pages/JobsPage";
+import Applications from "./pages/Applications";
+import ProtectedRoute from "./components/ProtectedRoute";
+import './styles/Base.css';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { useAuth } from "./hooks/useAuth";
+
+
+function Logout() {
+  localStorage.clear();
+  return <Navigate to="/login" />;
+}
+
+function RegisterUser() {
+  return <Register />;
+}
+
+function App() {
+  useAuth();
+  return (
+    <>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Navbar />
+        <div className="app-container">
+          <Routes>
+            <Route
+              path="/"
+              element={<Home />}
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/register" element={<RegisterUser />} />
+            <Route path="*" element={<NotFound />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            
+              <Route path="/applications" element={
+                <ProtectedRoute>
+                <Applications />
+                </ProtectedRoute> 
+              } />
+            
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </LanguageProvider>
+    </>
+  );
+}
+
+export default App;
+
+==================================================
+
+File: src/api.js
+----------------
+import axios from "axios"
+import { ACCESS_TOKEN } from "./constants"
+
+// importing everything from env variable file
+const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+});
+
+// Adding authorization header
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem(ACCESS_TOKEN);
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
+        return config
+    },
+    (error) => {
+        return Promise.reject(error)
+    }
+)
+
+
+export default api
+
+==================================================
+
+File: src/constants.js
+----------------------
+// Stores keys used to save the access and refresh tokens in localStorage
+
+export const ACCESS_TOKEN = "access";
+export const REFRESH_TOKEN = "refresh"
+
+==================================================
+
+File: src/main.jsx
+------------------
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+    // <StrictMode>
+        <App />
+    /* </StrictMode> */
+)
+
+
+==================================================
+
+File: src/contexts/LanguageContext.jsx
+--------------------------------------
+import { createContext, useContext, useState } from 'react';
+import { translations } from '../config/translations';
+
+const LanguageContext = createContext();
+
+export function LanguageProvider({ children }) {
+  const [language, setLanguage] = useState(localStorage.getItem('language') || 'pl');
+
+  const toggleLanguage = () => {
+    const newLang = language === 'pl' ? 'en' : 'pl';
+    setLanguage(newLang);
+    localStorage.setItem('language', newLang);
+  };
+
+  const t = (key) => {
+    return translations[language][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, toggleLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export const useLanguage = () => useContext(LanguageContext);
+
+==================================================
+
+File: src/styles/Base.css
+-------------------------
+:root[data-theme="light"] {
+  --primary-color: #AD8B73;
+  --primary-dark: #ad8b7377;
+  --primary-light: #a67c1a60;
+  --secondary-color: #2889ffbe;
+  
+  --background-color: #f8f8f860;
+  --card-background: #f0eadc36; 
+  --background-hover: rgba(146, 130, 56, 0.367);
+  --background-active: rgba(30, 153, 195, 0.449);
+  --second-background: white;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #2d3845;
+  --text-muted: #64748b;
+  
+  --border-color: #bab395;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+
+
+  .skill-item.master {
+    color: #7b19dc;
+    border-color: rgb(155, 49, 255);
+  }
+
+  .skill-item.advanced {
+    color: rgb(244, 99, 27);           
+    border-color: #f55539;   
+  }
+
+  .skill-item.senior {
+    color: rgb(0, 82, 79);
+    border-color: rgb(0, 134, 152)
+  }
+  
+  .skill-item.regular {
+    color: #47a70f;           
+    border-color: #358e01;    
+  }
+  
+  .skill-item.junior {
+    color: #075985;           
+    border-color: #29b3f2;    
+  }
+
+  .skill-item.nice {
+    border-color: #5b5a5a; 
+    color: #807623;           
+  }
+
+
+}
+
+:root[data-theme="dark"] {
+  /* Core colors */
+  --primary-color: #5B8FB9;       
+  --primary-dark: rgba(96, 165, 250, 0.1);       
+  --primary-light: #142540c7;
+  --secondary-color: #6daadc;
+  
+  /* Background colors */
+  --background-color: #0f172a;   
+  --card-background: #1e293b;    
+  --background-hover: rgba(255, 255, 255, 0.05);
+  --background-active: rgba(96, 165, 250, 0.562);
+  --second-background: #0f172a;
+  
+  /* Text colors */
+  --text-primary: #f8fafc;        
+  --text-secondary: #94a3b8;      
+  --text-muted: #64748b;          
+  
+  /* Border and shadow */
+  --border-color: #334155;       
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  
+  
+}
+:root {
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  
+  --level-nice-text: #acacac;
+  --level-junior-text: #7dd3fc;
+  
+  --level-regular-text: #fcd34d;
+  --level-senior-text: #86efac;
+  --level-advanced-text: #f7945b;
+  --level-master-text: #ebc2fb;
+  
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  
+  /* Border radius */
+  --radius: 0.5rem;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-all: all 0.2s ease;
+  --transition-colors: color 0.2s ease, background-color 0.2s ease;
+  --transition-transform: transform 0.2s ease;
+  
+  /* Font sizes */
+  --text-xs: 0.65rem;
+  --text-sm: 0.775rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  /* Layout */
+  --container-width: 1280px;
+  --container-padding: 1rem;
+  --page-margin: 2rem;
+  --sidebar-width: 300px;
+  --header-height: 48px;
+  
+  /* Mobile */
+  --mobile-padding: 0.75rem;
+  --mobile-gap: 0.75rem;
+}
+/* Base styles */
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input {
+  color: var(--text-primary);
+}
+
+==================================================
+
+File: src/styles/Dashboard.css
+------------------------------
+.dashboard {
+  padding: var(--space-6);
+  max-width: var(--container-width);
+  margin: 0 auto;
+}
+
+.dashboard-filters {
+  margin-bottom: var(--space-6);
+}
+
+.main-filters {
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: var(--space-4);
+}
+
+.filter-button {
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.filter-button:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-color);
+}
+
+.filter-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.experience-filters {
+  display: flex;
+  margin-top: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.experience-button {
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.experience-button:hover {
+  background-color: var(--background-hover);
+  transform: translateY(-1px);
+}
+
+.experience-button.active {
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.skills-card {
+  grid-column: span 2;
+}
+
+.dashboard-error {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--card-background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+}
+
+.retry-button {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.retry-button:hover {
+  background-color: var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: var(--mobile-padding);
+    width: 100%;
+  }
+
+  .filter-button {
+    flex: 1;
+    text-align: center;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .experience-filters {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .experience-filters button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .experience-button {
+    width: 100%;
+    padding: var(--space-3);
+  }
+
+  .experience-button:hover {
+    background-color: none;
+  }
+
+  .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+==================================================
+
+File: src/styles/FilterPanel.css
+--------------------------------
+/* Main container */
+.filter-panel {
+  position: sticky;
+  top: var(--space-4);
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: fit-content;
+  max-height: calc(100vh - var(--space-8));
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+
+.jobs-count-wrapper {
+  background: var(--card-background);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.clear-filters-button {
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  transition: var(--transition-colors);
+}
+
+.clear-filters-button:hover {
+  text-decoration: underline;
+  color: var(--primary-dark);
+}
+
+.selected-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  margin: var(--space-1) ;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.selected-filter:hover {
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  
+}
+
+/* Filter sections */
+.filter-section {
+  background: var(--card-background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.section-header {
+  width: 100%;
+  padding: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-background);
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.section-header .rotate-180 {
+  transform: rotate(180deg);
+}
+
+.section-content {
+  display: none;
+  padding: var(--space-4);
+  padding-top: 0;
+  background: var(--card-background);
+}
+
+.section-content.open {
+  display: block;
+}
+
+/* Skills section */
+.skills-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skill-search-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  background-color: var(--background-color);
+}
+
+.skill-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.skill-option {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  background-color: var(--background-color);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-all);
+  user-select: none;
+}
+
+.skill-option:hover:not(.selected) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.skill-option.selected {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Options list */
+.option-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.option-list.date-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.option-item {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  background-color: var(--background-color);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-all);
+  user-select: none;
+}
+
+.option-item:hover:not(.selected) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.option-item.selected {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Mobile styles */
+.mobile-filter-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+    height: var(--header-height);
+    border: none;
+    border-radius: var(--radius);
+    margin-bottom: var(--space-4);
+    width: 100%;
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .clear-filters-button {
+    display: none;
+  }
+
+  .filter-panel.mobile {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    max-height: none;
+    padding: 0px;
+    overflow-y: hidden;
+    background: var(--second-background);
+  }
+
+  .filter-panel.mobile.open {
+    display: flex;
+  }
+
+  .filter-header {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-background);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-header);
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    padding: var(--space-2);
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .filter-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-5);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-footer {
+    padding: var(--space-4);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--space-4);
+    background: var(--card-background);
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-header);
+  }
+
+  .clear-button {
+    flex: 1;
+    padding: var(--space-3);
+    border: 1px solid var(--border-color);
+    background: none;
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .search-button {
+    flex: 2;
+    padding: var(--space-3);
+    background: var(--primary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .option-item:hover:not(.selected) {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+  }
+}
+
+==================================================
+
+File: src/styles/Form.css
+-------------------------
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-8) auto;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  max-width: 600px;
+  background-color: var(--card-background);
+}
+
+.form-input {
+  width: 90%;
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.form-button {
+  width: 95%;
+  padding: var(--space-2) var(--space-4);
+  margin: var(--space-4) 0;
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-colors);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.form-button:hover {
+  background-color: var(--primary-dark);
+}
+
+.form-button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+.form-footer {
+  text-align: center;
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.form-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition-colors);
+}
+
+.form-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.form-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error-color);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+
+.form-success {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--success-color);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+
+==================================================
+
+File: src/styles/Job.css
+------------------------
+.job-container {
+  background: var(--card-background);
+  padding: var(--space-6);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-all);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* .job-container:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+} */
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.job-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.job-title {
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.job-title:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.company-name {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.post-date {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.job-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--background-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.toggle-button {
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: var(--transition-colors);
+}
+
+.toggle-button:hover {
+  color: var(--primary-dark);
+}
+
+.job-summary {
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  padding: var(--space-2) 0;
+}
+
+.job-summary strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.job-summary ul {
+  margin: var(--space-3) 0;
+  padding-left: var(--space-6);
+  list-style-type: none;
+}
+
+.job-summary ul li {
+  position: relative;
+  padding-left: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.job-summary p {
+  margin-bottom: var(--space-3);
+}
+
+.job-summary ul li:before {
+  content: "•";
+  position: absolute;
+  left: calc(-1 * var(--space-4));
+  color: var(--primary-color);
+}
+
+.skills-section {
+  margin-top: var(--space-2);
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.skill-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  background-color: var(--background-color);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-colors);
+}
+
+.skill-item.nice {
+  background-color: var(--level-nice-bg);
+  color: var(--level-nice-text);
+  border-color: var(--level-nice-text);
+}
+
+.skill-item.junior {
+  background-color: var(--level-junior-bg);
+  color: var(--level-junior-text);
+  border-color: var(--level-junior-text);
+}
+
+.skill-item.regular {
+  background-color: var(--level-regular-bg);
+  color: var(--level-regular-text);
+  border-color: var(--level-regular-text);
+}
+
+.skill-item.senior {
+  background-color: var(--level-senior-bg);
+  color: var(--level-senior-text);
+  border-color: var(--level-senior-text);
+}
+
+.skill-item.advanced {
+  background-color: var(--level-advanced-bg);
+  color: var(--level-advanced-text);
+  border-color: var(--level-advanced-text);
+}
+
+.skill-item.master {
+  background-color: var(--level-master-bg);
+  color: var(--level-master-text);
+  border-color: var(--level-master-text);
+}
+
+.skill-level {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--background-hover);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--background-hover);
+}
+
+
+@media (max-width: 768px) {
+  .job-container {
+    padding: var(--space-4);
+  }
+
+  .job-header {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .job-details {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .detail-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .skills {
+    justify-content: center;
+  }
+}
+
+==================================================
+
+File: src/styles/JobsPage.css
+-----------------------------
+.jobs-page {
+  max-width: var(--container-width);
+  margin: var(--page-margin) auto;
+  padding: 0 var(--container-padding);
+  position: relative;
+}
+
+.jobs-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background-color: var(--background-color);
+  padding: var(--space-4) 0;
+  margin-bottom: var(--space-4);
+}
+
+.jobs-count-wrapper {
+  background: var(--card-background);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.jobs-count {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.jobs-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  gap: var(--space-8);
+  min-height: calc(100vh - var(--header-height) - var(--space-16));
+  position: relative;
+}
+
+.jobs-container {
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.jobs-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.loading-state,
+.error-state,
+.no-jobs-state {
+  padding: var(--space-8);
+  text-align: center;
+  background: var(--card-background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+}
+
+.error-state button {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.error-state button:hover {
+  background-color: var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  .jobs-page {
+    margin: var(--space-4) auto;
+  }
+
+  .jobs-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .jobs-container {
+    width: 100%;
+  }
+  
+  body.filters-open {
+    overflow: hidden;
+  }
+}
+
+==================================================
+
+File: src/styles/LanguageToggle.css
+-----------------------------------
+.language-toggle {
+    padding: var(--space-2);
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: var(--transition-all);
+  }
+  
+  .language-toggle:hover {
+    background-color: var(--background-hover);
+  }
+
+==================================================
+
+File: src/styles/Navbar.css
+---------------------------
+.navbar {
+  background-color: var(--card-background);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-4) 0;
+  box-shadow: var(--shadow-sm);
+}
+  
+.navbar-container {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand a {
+  color: var(--primary-color);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition-colors);
+}
+
+.navbar-links {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: var(--transition-colors);
+}
+
+.nav-link:hover {
+  color: var(--primary-color);
+}
+
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: var(--mobile-padding) 0;
+  }
+
+  .navbar-container {
+    width: 100%;
+    flex-direction: column;
+    gap: var(--mobile-gap);
+  }
+
+  .navbar-links {
+    width: 100%;
+    justify-content: space-around;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .nav-link {
+    padding: var(--space-2);
+  }
+  .nav-link:hover {
+    color: var(--text-secondary);
+  }
+}
+
+==================================================
+
+File: src/styles/NotFound.css
+-----------------------------
+.not-found-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height));
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.not-found-container h1 {
+  font-size: 6rem;
+  color: var(--primary-color);
+  margin-bottom: var(--space-4);
+}
+
+.not-found-container p {
+  font-size: var(--text-xl);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.return-home-button {
+  padding: var(--space-3) var(--space-6);
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.return-home-button:hover {
+  background-color: var(--primary-dark);
+}
+
+==================================================
+
+File: src/styles/Pagination.css
+-------------------------------
+.pagination-nav {
+  margin-top: var(--space-8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.pagination-button {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: var(--transition-all);
+  cursor: pointer;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: var(--background-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.pagination-button:disabled {
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+}
+
+@media (max-width: 768px) {
+  .pagination-nav {
+    margin-top: var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .pagination-button {
+    flex: 1;
+    max-width: 120px;
+  }
+}
+
+==================================================
+
+File: src/styles/Skills.css
+---------------------------
+.skills-section {
+  margin-top: var(--space-2);
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.skill-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  transition: var(--transition-all);
+}
+
+.skill-item.senior {
+  background-color: var(--level-senior-bg);
+  color: var(--level-senior-text);
+  border: 1px solid var(--level-senior-text);
+}
+
+.skill-item.regular {
+  background-color: var(--level-regular-bg);
+  color: var(--level-regular-text);
+  border: 1px solid var(--level-regular-text);
+}
+
+.skill-item.junior {
+  background-color: var(--level-junior-bg);
+  color: var(--level-junior-text);
+  border: 1px solid var(--level-junior-text);
+}
+
+.skill-level {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--background-hover);
+  border-radius: var(--radius-full);
+}
+
+.toggle-button {
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: var(--transition-colors);
+}
+
+.toggle-button:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+==================================================
+
+File: src/styles/SkillsTable.css
+--------------------------------
+.skills-table {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.skills-column {
+  flex: 1;
+  border-right: 1px solid var(--border-color);
+  padding-right: var(--space-4);
+}
+
+.skills-column:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.skills-table-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-colors);
+}
+
+.skills-table-row:hover {
+  background-color: var(--background-hover);
+}
+
+.skills-table-row:last-child {
+  border-bottom: none;
+}
+
+.skill-rank {
+  min-width: var(--space-6);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.skill-name {
+  flex: 1;
+  margin-right: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.skill-count {
+  font-weight: 450;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .skills-table {
+    gap: var(--mobile-gap);
+  }
+  
+  .skills-table-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+  }
+}
+
+==================================================
+
+File: src/styles/StatsCard.css
+------------------------------
+.stats-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+  transition: var(--transition-all);
+  background: linear-gradient(
+    to bottom right,
+    var(--card-background),
+    var(--background-color)
+  );
+}
+
+  
+.stats-card-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.stats-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.market-overview {
+  background: linear-gradient(
+    to bottom right,
+    var(--card-background),
+    var(--background-color)
+  );
+}
+
+@media (max-width: 768px) {
+  .stats-card {
+    padding: var(--space-4);
+  }
+}
+
+==================================================
+
+File: src/styles/StatsRow.css
+-----------------------------
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+  transition: var(--transition-colors);
+}
+
+.stats-label {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stats-value {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    padding: var(--space-1) 0;
+  }
+}
+
+==================================================
+
+File: src/styles/ThemeToggle.css
+--------------------------------
+.theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius);
+    transition: var(--transition-colors);
+  }
+  
+  .theme-toggle:hover {
+    background-color: var(--background-hover);
+  }
+
+==================================================
+
+File: src/styles/applications/Applications.css
+----------------------------------------------
+.applications-container {
+  max-width: var(--container-width);
+  margin: var(--space-8) auto;
+  padding: 0 var(--container-padding);
+}
+
+.applications-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.application-card {
+  background: var(--card-background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+  transition: var(--transition-all);
+}
+
+.application-details {
+  display: none;
+  margin: var(--space-4) 0;
+  gap: var(--space-2);
+  flex-direction: column;
+}
+
+.application-details.expanded {
+  display: flex;
+}
+
+.toggle-details-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.toggle-details-button:hover {
+  color: var(--primary-dark);
+}
+
+/* .application-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+} */
+
+.application-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.application-job-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.application-date {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.application-details {
+  margin-bottom: var(--space-4);
+}
+
+.loading-state {
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+  animation: fadeIn 0.3s ease-in forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+.empty-applications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-16);
+  margin-top: var(--space-8);
+  background: var(--card-background);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.empty-applications-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+}
+
+.empty-applications h2 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.empty-applications p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  max-width: 400px;
+}
+
+.browse-jobs-button {
+  padding: var(--space-3) var(--space-6);
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius);
+  transition: var(--transition-colors);
+}
+
+.browse-jobs-button:hover {
+  background-color: var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  .applications-container {
+      margin: var(--space-4) auto;
+      padding: var(--mobile-padding);
+  }
+
+  .application-header {
+      flex-direction: column;
+      gap: var(--space-2);
+  }
+
+  .application-card {
+      padding: var(--space-4);
+  }
+}
+
+==================================================
+
+File: src/styles/applications/Buttons.css
+-----------------------------------------
+.add-note-button,
+.apply-button {
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-colors);
+    width: fit-content;
+}
+  
+.add-note-button:hover,
+.apply-button:hover {
+    background-color: var(--primary-dark);
+}
+  
+.add-note-button:disabled,
+.apply-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.delete-application-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: var(--transition-all);
+}
+
+.delete-application-button:hover {
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.delete-application-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.delete-note-button {
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-colors);
+}
+
+.delete-note-button:hover {
+    color: var(--error-color);
+}
+
+==================================================
+
+File: src/styles/applications/HeartButton.css
+---------------------------------------------
+.heart-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text-secondary);
+    width: 24px;
+    height: 24px;
+    transition: transform 0.15s ease-in-out;
+}
+
+.heart-button:hover {
+    transform: scale(1.15);
+}
+
+.heart-button.active {
+    color: var(--error-color);
+    animation: pop 0.4s ease;
+}
+
+.heart-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+==================================================
+
+File: src/styles/applications/Notes.css
+---------------------------------------
+.notes-section {
+    padding-top: var(--space-4);
+}
+  
+.notes-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-4);
+}
+  
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+  
+.note-item {
+    border-radius: var(--radius);
+    padding: var(--space-3);
+    border: 1px solid var(--border-color)
+}
+  
+.note-content {
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+    line-height: 1.5;
+}
+  
+.note-date {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+  
+.add-note-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+  
+.note-input {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+  
+.note-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.note-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-2);
+}
+
+@media (max-width: 768px) {
+    .add-note-button {
+        width: 100%;
+    }
+}
+
+==================================================
+
+File: src/styles/applications/StatusButtons.css
+-----------------------------------------------
+.status-buttons {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.status-button {
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+    background: var(--card-background);
+    box-shadow: var(--shadow-sm);
+}
+
+.status-button:hover {
+    opacity: 0.6;
+    transform: translateY(-1px);
+}
+
+/* Each status has its own color */
+.status-button.applied {
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.status-button.applied.active {
+    background: var(--background-active);
+    color: white;
+    opacity: 1;
+}
+
+.status-button.interviewing {
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+}
+
+.status-button.interviewing.active {
+    background: var(--warning-color);
+    color: white;
+    opacity: 1;
+}
+
+.status-button.rejected {
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+.status-button.rejected.active {
+    background: var(--error-color);
+    color: white;
+    opacity: 1;
+}
+
+.status-button.accepted {
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.status-button.accepted.active {
+    background: var(--success-color);
+    color: white;
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .status-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .status-button {
+        flex: 1;
+        min-width: calc(50% - var(--space-2));
+        text-align: center;
+    }
+}
+
+==================================================
+
+File: src/hooks/useAuth.js
+--------------------------
+import { useState, useEffect } from 'react';
+import { jwtDecode } from "jwt-decode";
+import { REFRESH_TOKEN, ACCESS_TOKEN } from "../constants";
+import api from "../api";
+
+export const useAuth = () => {
+    const [isAuthorized, setIsAuthorized] = useState(null);
+
+    const refreshToken = async () => {
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN);
+        if (!refreshToken) {
+            setIsAuthorized(false);
+            return false;
+        }
+
+        try {
+            const res = await api.post("/api/token/refresh", {
+                refresh: refreshToken,
+            });
+            if (res.status === 200) {
+                localStorage.setItem(ACCESS_TOKEN, res.data.access);
+                setIsAuthorized(true);
+                return true;
+            }
+            setIsAuthorized(false);
+            return false;
+        } catch (error) {
+            setIsAuthorized(false);
+            return false;
+        }
+    };
+
+    const checkToken = () => {
+        const token = localStorage.getItem(ACCESS_TOKEN);
+        const refreshTokenExists = localStorage.getItem(REFRESH_TOKEN);
+
+        if (!token || !refreshTokenExists) {
+            setIsAuthorized(false);
+            return false;
+        }
+
+        try {
+            const decoded = jwtDecode(token);
+            const tokenExpiration = decoded.exp;
+            const now = Date.now() / 1000;
+            const timeUntilExpiration = tokenExpiration - now;
+
+            if (timeUntilExpiration < 300) {
+                return false;
+            }
+            
+            setIsAuthorized(true);
+            return true;
+        } catch (error) {
+            setIsAuthorized(false);
+            return false;
+        }
+    };
+
+    useEffect(() => {
+        const initializeAuth = async () => {
+            const hasTokens = localStorage.getItem(ACCESS_TOKEN) && localStorage.getItem(REFRESH_TOKEN);
+            if (!hasTokens) {
+                setIsAuthorized(false);
+                return;
+            }
+
+            if (!checkToken()) {
+                await refreshToken();
+            }
+        };
+
+        initializeAuth();
+
+        const interval = setInterval(initializeAuth, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return { isAuthorized };
+};
+
+==================================================
+
+File: src/hooks/useFilterData.js
+--------------------------------
+import { useState, useEffect } from 'react';
+import { filterSections } from '../config/filterConfig';
+import api from '../api';
+
+export const useFilterData = () => {
+  const [sections, setSections] = useState(filterSections);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const filterOptionsRes = await api.get("api/jobs/filter-options");
+        const { top_skills, available_dates } = filterOptionsRes.data;
+
+        setSections(prev => prev.map(section => {
+          if (section.id === 'scraped_date') {
+            return { 
+              ...section, 
+              options: available_dates.map(date => ({
+                value: date,
+                label: new Date(date).toLocaleDateString()
+              }))
+            };
+          }
+          if (section.id === 'skills') {
+            return { ...section, topSkills: top_skills };
+          }
+          return section;
+        }));
+      } catch (error) {
+        console.error("Failed to fetch filter data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { sections };
+};
+
+==================================================
+
+File: src/hooks/useFilterHandlers.js
+------------------------------------
+import { useState, useCallback } from 'react';
+import { initialFilters } from '../config/filterConfig';
+
+export const useFilterHandlers = (onFilterChange) => {
+  const [filters, setFilters] = useState(initialFilters);
+
+  const handleFilterChange = useCallback((section, value) => {
+    setFilters(prevFilters => {
+      const newFilters = { ...prevFilters };
+      
+      if (section === 'skills') {
+        newFilters.skills = prevFilters.skills.includes(value)
+          ? prevFilters.skills.filter(s => s !== value)
+          : [...prevFilters.skills, value];
+      } else {
+        newFilters[section] = prevFilters[section] === value ? "" : value;
+      }
+
+      onFilterChange(newFilters);
+      return newFilters;
+    });
+  }, [onFilterChange]);
+
+  const clearFilters = useCallback(() => {
+    setFilters(initialFilters);
+    onFilterChange(initialFilters);
+  }, [onFilterChange]);
+
+  return {
+    filters,
+    handleFilterChange,
+    clearFilters
+  };
+};
+
+==================================================
+
+File: src/hooks/useMobileHandler.js
+-----------------------------------
+import { useState, useEffect } from 'react';
+
+export const useMobileHandler = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      document.body.style.cssText = 'position: fixed; width: 100%;';
+      return () => document.body.style.cssText = '';
+    }
+  }, [isOpen, isMobile]);
+
+  return {
+    isOpen,
+    setIsOpen,
+    isMobile
+  };
+};
+
+==================================================
+
+File: src/hooks/useTheme.js
+---------------------------
+import { useState, useEffect } from 'react';
+
+export const useTheme = () => {
+  const [theme, setTheme] = useState(() => 
+    localStorage.getItem('theme') || 'dark'
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return [theme, setTheme];
+};
+
+==================================================
+
+File: src/components/ApplyButton.jsx
+------------------------------------
+import { useState } from 'react';
+import { Heart } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import api from '../api';
+import '../styles/applications/HeartButton.css';
+
+export function ApplyButton({ jobId, hasApplied, applicationId }) {
+    const [loading, setLoading] = useState(false);
+    const [isApplied, setIsApplied] = useState(hasApplied);
+    const [currentApplicationId, setCurrentApplicationId] = useState(applicationId);
+    const navigate = useNavigate();
+
+    const handleClick = async () => {
+        if (loading) return;
+        
+        try {
+            setLoading(true);
+            if (!isApplied) {
+                const response = await api.post('api/applications', { job_id: jobId });
+                setCurrentApplicationId(response.data.id);
+                setIsApplied(true);
+            } else {
+                await api.delete(`api/applications/${currentApplicationId}`);
+                setIsApplied(false);
+                setCurrentApplicationId(null);
+            }
+        } catch (error) {
+            if (error.response?.status === 401) {
+                navigate('/login');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    return (
+        <button 
+            onClick={handleClick}
+            disabled={loading}
+            className={`heart-button ${isApplied ? 'active' : ''}`}
+        >
+            <Heart 
+                size={24}
+                fill={isApplied ? 'currentColor' : 'none'}
+            />
+        </button>
+    );
+}
+
+==================================================
+
+File: src/components/FilterPanel.jsx
+------------------------------------
+import { useState } from "react";
+import { Filter, X } from "lucide-react";
+import { filterSections } from "../config/filterConfig";
+import { useFilterHandlers } from "../hooks/useFilterHandlers";
+import { useMobileHandler } from "../hooks/useMobileHandler";
+import { useFilterData } from "../hooks/useFilterData";
+import { FilterSection } from "./FilterSection";
+import "../styles/FilterPanel.css";
+import { useLanguage } from "../contexts/LanguageContext";
+
+function FilterPanel({ onFilterChange, jobCount, loading }) {
+  const { filters, handleFilterChange, clearFilters } =
+    useFilterHandlers(onFilterChange);
+  const { isOpen, setIsOpen, isMobile } = useMobileHandler();
+  const { sections } = useFilterData();
+  const { t } = useLanguage();
+  const [skillSearch, setSkillSearch] = useState("");
+  const [openSections, setOpenSections] = useState(
+    filterSections.reduce(
+      (acc, section) => ({
+        ...acc,
+        [section.id]: section.defaultOpen,
+      }),
+      {}
+    )
+  );
+
+  const getFilteredSkills = (section) => {
+    if (!skillSearch) {
+      return section.topSkills.slice(0, 10);
+    }
+    return section.topSkills.filter((skill) =>
+      skill.toLowerCase().includes(skillSearch.toLowerCase())
+    );
+  };
+
+  const renderSelectedFilters = () => {
+    const selectedFilters = Object.entries(filters).flatMap(([key, value]) => {
+      if (key === "skills" && value.length > 0) {
+        return value.map((skill) => ({
+          key: `skill-${skill}`,
+          label: skill,
+          onClick: () => handleFilterChange("skills", skill),
+        }));
+      }
+
+      if (!value) return [];
+
+      const section = sections.find((s) => s.id === key);
+      if (!section) return [];
+
+      const option = section.options?.find((o) => o.value === value);
+      if (!option) return [];
+
+      return [
+        {
+          key,
+          // Use the translation key if available
+          label: option.labelKey ? t(option.labelKey) : option.label || value,
+          onClick: () => handleFilterChange(key, value),
+        },
+      ];
+    });
+
+    if (selectedFilters.length === 0) return null;
+
+    return (
+      <div className="selected-filters">
+        {selectedFilters.map((filter) => (
+          <button
+            key={filter.key}
+            className="selected-filter"
+            onClick={filter.onClick}
+          >
+            {filter.label} <X size={14} />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const renderSectionContent = (section) => {
+    if (section.isSkillSection) {
+      return (
+        <div className="skills-section">
+          <input
+            type="text"
+            placeholder={t("search_technology")}
+            value={skillSearch}
+            onChange={(e) => setSkillSearch(e.target.value)}
+            className="skill-search-input"
+          />
+          <div className="skills-list">
+            {getFilteredSkills(section).map((skill) => (
+              <div
+                key={skill}
+                className={`skill-option ${
+                  filters.skills.includes(skill) ? "selected" : ""
+                }`}
+                onClick={() => handleFilterChange("skills", skill)}
+              >
+                <span>{skill}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`option-list ${
+          section.id === "scraped_date" ? "date-list" : ""
+        }`}
+      >
+        {section.options.map((option) => (
+          <div
+            key={option.value}
+            className={`option-item ${
+              filters[section.id] === option.value ? "selected" : ""
+            }`}
+            onClick={() => handleFilterChange(section.id, option.value)}
+          >
+            <span>{option.labelKey ? t(option.labelKey) : option.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {isMobile && (
+        <button
+          className="mobile-filter-toggle"
+          onClick={() => setIsOpen(true)}
+        >
+          <Filter size={20} />
+          <span>{t("filters")}</span>
+          {Object.values(filters).some((v) => v && v.length !== 0) && (
+            <span className="filter-count">•</span>
+          )}
+        </button>
+      )}
+
+      <div
+        className={`filter-panel ${isMobile ? "mobile" : ""} ${
+          isOpen ? "open" : ""
+        }`}
+      >
+        {isMobile && (
+          <div className="filter-header">
+            <h3>{t("filters")}</h3>
+            <button className="close-button" onClick={() => setIsOpen(false)}>
+              <X size={24} />
+            </button>
+          </div>
+        )}
+
+        <div className="jobs-count-wrapper">
+          <p className="jobs-count">
+            {loading
+              ? t("loading")
+              : t("found_jobs").replace("{{count}}", jobCount || "")}
+          </p>
+          {Object.values(filters).some((v) => v && v.length !== 0) && (
+            <button onClick={clearFilters} className="clear-filters-button">
+              {t("clear_filters")}
+            </button>
+          )}
+        </div>
+
+        {renderSelectedFilters()}
+
+        <div className="filter-content">
+          {sections.map((section) => (
+            <FilterSection
+              key={section.id}
+              section={section}
+              openSections={openSections}
+              setOpenSections={setOpenSections}
+            >
+              {renderSectionContent(section)}
+            </FilterSection>
+          ))}
+        </div>
+
+        {isMobile && (
+          <div className="filter-footer">
+            <button className="clear-button" onClick={clearFilters}>
+              {t("clear_filters")}
+            </button>
+            <button
+              className="search-button"
+              onClick={() => {
+                onFilterChange(filters);
+                setIsOpen(false);
+              }}
+            >
+              {t("apply_filters")}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+export default FilterPanel;
+
+
+==================================================
+
+File: src/components/FilterSection.jsx
+--------------------------------------
+import { ChevronDown } from "lucide-react";
+import { useLanguage } from '../contexts/LanguageContext';
+
+export const FilterSection = ({ section, openSections, setOpenSections, children }) => {
+  const { t } = useLanguage();
+  
+  return (
+    <div className="filter-section">
+      <button
+        className={`section-header ${openSections[section.id] ? 'open' : ''}`}
+        onClick={() => setOpenSections(prev => ({
+          ...prev,
+          [section.id]: !prev[section.id]
+        }))}
+      >
+        <span>{t(section.titleKey)}</span>
+        <ChevronDown 
+          size={20} 
+          className={openSections[section.id] ? 'rotate-180' : ''}
+        />
+      </button>
+      <div className={`section-content ${openSections[section.id] ? 'open' : ''}`}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+==================================================
+
+File: src/components/Form.jsx
+-----------------------------
+import { useState } from "react";
+import api from "../api";
+import { Link, useNavigate } from "react-router-dom";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import "../styles/Form.css";
+import { useLanguage } from "../contexts/LanguageContext";
+
+function Form({ route, method }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    
+    setLoading(true);
+    
+    try {
+        let response = await api.post(route, {
+            username,
+            password,
+        });
+
+        if (method === "register" && response.data.success) {
+            response = await api.post("api/token/pair", {
+                username,
+                password,
+            });
+        }
+        localStorage.setItem(ACCESS_TOKEN, response.data.access);
+        localStorage.setItem(REFRESH_TOKEN, response.data.refresh);
+        navigate("/");
+    } catch (error) {
+        if (method === "register" && error.response?.data?.message) {
+            setError(t("username_exists"));
+        } else if (method === "login" && error.response?.data?.detail) {
+            setError(t("invalid_credentials"));
+        } else {
+            setError(t("server_error"));
+        }
+    } finally {
+        setTimeout(() => {
+            setLoading(false);
+        }, 400);
+    }
+};
+
+  return (
+    <form onSubmit={handleSubmit} className="form-container">
+      <h1>{t(method)}</h1>
+
+      {error && <div className="form-error">{error}</div>}
+
+      <input
+        className="form-input"
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder={t("username")}
+        disabled={loading}
+        required
+        onInvalid={e => e.target.setCustomValidity(t("field_required"))}
+        onInput={e => e.target.setCustomValidity("")}
+
+      />
+      <input
+        className="form-input"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder={t("password")}
+        disabled={loading}
+        required
+        onInvalid={e => e.target.setCustomValidity(t("field_required"))}
+        onInput={e => e.target.setCustomValidity("")}
+      />
+      <button className="form-button" type="submit" disabled={loading}>
+        {loading ? t("loading") : t(method)}
+      </button>
+
+      {method === "login" && (
+        <div className="form-footer">
+          <p>
+            {t("no_account")}{" "}
+            <Link to="/register" className="form-link">
+              {t("register")}
+            </Link>
+          </p>
+        </div>
+      )}
+    </form>
+  );
+}
+
+export default Form;
+
+==================================================
+
+File: src/components/Job.jsx
+----------------------------
+import { useState } from "react";
+import "../styles/Job.css";
+import { Calendar } from "lucide-react";
+import DOMPurify from "dompurify";
+import { useLanguage } from "../contexts/LanguageContext";
+import { formatDate } from "../config/DateFormater";
+import { ApplyButton } from "./ApplyButton";
+
+function Job({ job }) {
+  const [showSummary, setShowSummary] = useState(false);
+  const { t, language } = useLanguage();
+
+  return (
+    <div className="job-container">
+      <div className="job-header">
+        <div className="job-title-section">
+          <a
+            href={job.url}
+            className="job-title"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {job.title}
+          </a>
+          <span className="company-name">{job.company}</span>
+        </div>
+        <span className="post-date">
+          <Calendar size={16} className="date-icon" />
+          {formatDate(job.scraped_date, language)}
+        </span>
+      </div>
+
+      <div className="job-details">
+        {job.location && (
+          <span className="detail-item location">📍 {job.location}</span>
+        )}
+        {job.operating_mode && (
+          <span className="detail-item work-mode">💼 {job.operating_mode}</span>
+        )}
+        {job.salary && (
+          <span className="detail-item salary">💰 {job.salary}</span>
+        )}
+      </div>
+
+      <button
+        onClick={() => setShowSummary(!showSummary)}
+        className="toggle-button"
+      >
+        {showSummary ? t("hide_summary") : t("show_summary")}
+      </button>
+
+      {showSummary && job.summary && (
+        <div
+          className="job-summary"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(job.summary, {
+              ALLOWED_TAGS: ["strong", "ul", "li", "br", "p"],
+              ALLOWED_ATTR: [],
+            }),
+          }}
+        />
+      )}
+
+      <div className="skills-section">
+        <div className="skills">
+          {Object.entries(job.skills)
+            .slice(0, showSummary ? undefined : 10)
+            .map(([skill, level]) => (
+              <div key={skill} className={`skill-item ${level.toLowerCase()}`}>
+                {skill}
+                <span className="skill-level">{level}</span>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      <div className="job-actions">
+        <ApplyButton
+          jobId={job.id}
+          hasApplied={job.has_applied}
+          applicationId={job.application_id}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default Job;
+
+
+==================================================
+
+File: src/components/JobApplications.jsx
+----------------------------------------
+import { useState, useEffect } from "react";
+import api from "../api";
+import { Link } from "react-router-dom";
+import { Trash2, Calendar } from "lucide-react";
+import "../styles/applications/Applications.css";
+import "../styles/applications/StatusButtons.css";
+import "../styles/applications/Buttons.css";
+import "../styles/applications/Notes.css";
+import { useLanguage } from "../contexts/LanguageContext";
+import { formatDate } from "../config/DateFormater";
+import DOMPurify from "dompurify";
+
+function JobApplications() {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { t, language } = useLanguage();
+  const [expandedCards, setExpandedCards] = useState({});
+  const [noteInputs, setNoteInputs] = useState({});
+
+  const toggleCard = (id) => {
+    setExpandedCards((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      const response = await api.get("api/applications");
+      setApplications(response.data);
+    } catch (error) {
+      setError(t("failed_load_applications"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="applications-container">
+        <div className="loading-state">{t("loading")}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="applications-container">
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={fetchApplications} className="retry-button">
+            {t("try_again")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show empty state after loading is complete
+  if (!loading && applications.length === 0) {
+    return (
+      <div className="applications-container">
+        <div className="empty-applications">
+          <div className="empty-applications-icon">📋</div>
+          <h2>{t("no_applications_yet")}</h2>
+          <p>{t("no_applications_message")}</p>
+          <Link to="/jobs" className="browse-jobs-button">
+            {t("browse_jobs")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const updateApplicationStatus = async (applicationId, newStatus) => {
+    try {
+      await api.patch(`api/applications/${applicationId}`, {
+        status: newStatus,
+      });
+      fetchApplications();
+    } catch (error) {
+      alert(t("failed_update_status"));
+    }
+  };
+
+  const deleteApplication = async (applicationId) => {
+    if (window.confirm(t("confirm_delete_application"))) {
+      try {
+        await api.delete(`api/applications/${applicationId}`);
+        fetchApplications();
+      } catch (error) {
+        alert(t("failed_delete_application"));
+      }
+    }
+  };
+
+  const addNote = async (applicationId, e) => {
+    e.preventDefault();
+    const noteText = noteInputs[applicationId];
+    if (!noteText?.trim()) return;
+
+    try {
+      await api.post(`api/applications/${applicationId}/notes`, {
+        content: noteText,
+      });
+      setNoteInputs({
+        ...noteInputs,
+        [applicationId]: "",
+      });
+      fetchApplications();
+    } catch (error) {
+      alert(t("failed_add_note"));
+    }
+  };
+
+  const deleteNote = async (applicationId, noteId) => {
+    try {
+      await api.delete(`api/applications/${applicationId}/notes/${noteId}`);
+      fetchApplications();
+    } catch (error) {
+      alert(t("failed_delete_note"));
+    }
+  };
+
+  const statuses = [
+    { key: "APPLIED", icon: "📝" },
+    { key: "INTERVIEWING", icon: "💼" },
+    { key: "ACCEPTED", icon: "🎉" },
+    { key: "REJECTED", icon: "❌" },
+  ];
+
+  return (
+    <div className="applications-container">
+      <div className="applications-grid">
+        {applications.map((application) => (
+          <div key={application.id} className="application-card">
+            <div className="application-header">
+              <div className="job-title-section">
+                <span className="post-date">
+                  <Calendar size={16} className="date-icon" />
+                  {formatDate(application.applied_date, language)}
+                </span>
+                <a
+                  href={application.job.url}
+                  className="job-title"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {application.job.title}
+                </a>
+                <span className="company-name">{application.job.company}</span>
+              </div>
+
+              <button
+                onClick={() => toggleCard(application.id)}
+                className="toggle-details-button"
+              >
+                {expandedCards[application.id]
+                  ? t("hide_details")
+                  : t("show_details")}
+              </button>
+            </div>
+
+            <div className="status-buttons">
+              {statuses.map(({ key, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => updateApplicationStatus(application.id, key)}
+                  className={`status-button ${key.toLowerCase()} ${
+                    application.status === key ? "active" : ""
+                  }`}
+                >
+                  {icon} {t(key.toLowerCase())}
+                </button>
+              ))}
+            </div>
+
+            <div
+              className={`application-details ${
+                expandedCards[application.id] ? "expanded" : ""
+              }`}
+            >
+              {application.job.location && (
+                <span className="detail-item location">
+                  📍 {application.job.location}
+                </span>
+              )}
+              {application.job.operating_mode && (
+                <span className="detail-item work-mode">
+                  💼 {application.job.operating_mode}
+                </span>
+              )}
+              {application.job.salary && (
+                <span className="detail-item salary">
+                  💰 {application.job.salary}
+                </span>
+              )}
+              {application.job.summary && (
+                <div
+                  className="job-summary"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(application.job.summary, {
+                      ALLOWED_TAGS: ["strong", "ul", "li", "br", "p"],
+                      ALLOWED_ATTR: [],
+                    }),
+                  }}
+                />
+              )}
+
+              <div className="skills-section">
+                <div className="skills">
+                  {Object.entries(application.job.skills).map(
+                    ([skill, level]) => (
+                      <div
+                        key={skill}
+                        className={`skill-item ${level.toLowerCase()}`}
+                      >
+                        {skill}
+                        <span className="skill-level">{level}</span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="notes-section">
+              <h3 className="notes-title">{t("notes")}</h3>
+
+              <div className="notes-list">
+                {application.notes?.map((note) => (
+                  <div key={note.id} className="note-item">
+                    <div className="note-content">{note.content}</div>
+                    <div className="note-footer">
+                      <span className="note-date">
+                        {formatDate(note.created_at, language)}
+                      </span>
+                      <button
+                        onClick={() => deleteNote(application.id, note.id)}
+                        className="delete-note-button"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form
+                onSubmit={(e) => addNote(application.id, e)}
+                className="add-note-form"
+              >
+                <textarea
+                  value={noteInputs[application.id] || ""}
+                  onChange={(e) =>
+                    setNoteInputs({
+                      ...noteInputs,
+                      [application.id]: e.target.value,
+                    })
+                  }
+                  placeholder={t("add_note_placeholder")}
+                  className="note-input"
+                />
+                <button type="submit" className="add-note-button">
+                  {t("add_note")}
+                </button>
+              </form>
+            </div>
+
+            <button
+              onClick={() => deleteApplication(application.id)}
+              className="delete-application-button"
+            >
+              <Trash2 size={20} />
+              {t("delete_application")}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default JobApplications;
+
+
+==================================================
+
+File: src/components/LanguageToggle.jsx
+---------------------------------------
+import { useLanguage } from '../contexts/LanguageContext';
+import '../styles/LanguageToggle.css';
+
+export const LanguageToggle = () => {
+  const { language, toggleLanguage } = useLanguage();
+
+  return (
+    <button onClick={toggleLanguage} className="language-toggle">
+      {language === 'pl' ? 'EN' : 'PL'}
+    </button>
+  );
+};
+
+==================================================
+
+File: src/components/Navbar.jsx
+-------------------------------
+import { Link, useNavigate } from 'react-router-dom';
+import '../styles/Navbar.css';
+import '../styles/ThemeToggle.css';
+import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
+import { useLanguage } from '../contexts/LanguageContext';
+
+function Navbar() {
+  const navigate = useNavigate();
+  const isAuthenticated = !!localStorage.getItem('access');
+  const { t } = useLanguage();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
+  return (
+    <nav className="navbar">
+      <div className="navbar-container">
+        <div className="navbar-brand">
+          <Link to="/">IT Job Board</Link>
+        </div>
+        <div className="navbar-links">
+          <Link to="/" className="nav-link">{t('home')}</Link>
+          <Link to="/jobs" className="nav-link">{t('jobs')}</Link>
+          <Link to="/applications" className="nav-link">{t('my_applications')}</Link>
+          {isAuthenticated ? (
+            <Link onClick={handleLogout} className="nav-link">
+              {t('logout')}
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="nav-link">{t('login')}</Link>
+            </>
+          )}
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
+
+==================================================
+
+File: src/components/Pagination.jsx
+-----------------------------------
+import '../styles/Pagination.css';
+
+const Pagination = ({ next, previous, onPageChange }) => {
+  if (!next && !previous) return null;
+
+  return (
+    <nav className="pagination-nav">
+      <button
+        onClick={() => onPageChange(previous)}
+        disabled={!previous}
+        className="pagination-button"
+      >
+        Previous
+      </button>
+      
+      <button
+        onClick={() => onPageChange(next)}
+        disabled={!next}
+        className="pagination-button"
+      >
+        Next
+      </button>
+    </nav>
+  );
+};
+
+export default Pagination;
+
+==================================================
+
+File: src/components/ProtectedRoute.jsx
+---------------------------------------
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+
+function ProtectedRoute({ children }) {
+    const { isAuthorized } = useAuth();
+    const location = useLocation();
+
+    if (isAuthorized === null) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+            </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+
+    return children;
+}
+
+export default ProtectedRoute;
+
+==================================================
+
+File: src/components/ThemeToggle.jsx
+------------------------------------
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+
+export const ThemeToggle = () => {
+  const [theme, setTheme] = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="theme-toggle"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
+  );
+};
+
+==================================================
+
+File: src/components/dashboard/Dashboard.jsx
+--------------------------------------------
+import React, { useState, useEffect } from 'react';
+import api from '../../api';
+import StatsCard from './StatsCard';
+import StatsRow from './StatsRow';
+import SkillsTable from './SkillsTable';
+import '../../styles/Dashboard.css';
+import { useLanguage } from '../../contexts/LanguageContext';
+
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [error, setError] = useState(null);
+  const [selectedView, setSelectedView] = useState('all');
+  const [selectedExperience, setSelectedExperience] = useState('');
+  const { t } = useLanguage();
+
+  const experienceLevels = ['Trainee', 'Junior', 'Mid', 'Senior', 'Expert'];
+
+  const fetchDashboardData = async (view, experience) => {
+    try {
+      const params = new URLSearchParams();
+      
+      if (view !== 'all') {
+        params.append('skills', view);
+      }
+      
+      if (experience.length > 0) {
+        params.append('experience', experience);
+      }
+      
+      const response = await api.get(`api/jobs/stats?${params}`);
+      setStats(response.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load dashboard data. Please try again later.');
+      console.error('Dashboard data fetch error:', err);
+    } finally {
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData(selectedView, selectedExperience);
+  }, [selectedView, selectedExperience]);
+
+
+
+  if (error) {
+    return (
+      <div className="dashboard-error">
+        <p>{error}</p>
+        <button onClick={() => fetchDashboardData(selectedView, selectedExperience)} className="retry-button">
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
+  return (
+    <div className="dashboard">
+      <div className="dashboard-filters">
+        <div className="main-filters">
+          <button 
+            className={`filter-button ${selectedView === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedView('all')}
+          >
+            {t('overview')}
+          </button>
+          <button 
+            className={`filter-button ${selectedView === 'Python' ? 'active' : ''}`}
+            onClick={() => setSelectedView('Python')}
+          >
+            Python
+          </button>
+          <button 
+            className={`filter-button ${selectedView === 'JavaScript' ? 'active' : ''}`}
+            onClick={() => setSelectedView('JavaScript')}
+          >
+            JavaScript
+          </button>
+        </div>
+        <div className="experience-filters">
+          {experienceLevels.map(level => (
+            <button
+              key={level}
+              className={`experience-button ${selectedExperience === level ? 'active' : ''}`}
+              onClick={() => setSelectedExperience(selectedExperience === level ? '' : level)}
+            >
+              {t(level)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="dashboard-grid">
+        <StatsCard title={t('market_overview')} className="market-overview">
+          <div className="market-stats">
+            <StatsRow 
+              label={t('today')}
+              value={`${stats.trends.today} ${t('jobs')}`}
+            />
+            <StatsRow 
+              label={t('last_7_days')}
+              value={`${stats.trends.last_7_days} ${t('jobs')}`}
+            />
+            <StatsRow 
+              label={t('last_14_days')}
+              value={`${stats.trends.last_14_days} ${t('jobs')}`}
+            />
+            <StatsRow 
+              label={t('last_30_days')}
+              value={`${stats.trends.last_30_days} ${t('jobs')}`}
+            />
+          </div>
+        </StatsCard>
+
+        <StatsCard title={t('experience_distribution')}>
+          {Object.entries(stats.exp_stats).map(([level, count]) => (
+            <StatsRow 
+              key={level}
+              label={t(level.toLowerCase())}
+              value={count}
+            />
+          ))}
+        </StatsCard>
+
+        <StatsCard title={t('average_salary')}>
+          <div className="salary-display">
+            {stats.salary_stats || t('not_available')}
+          </div>
+        </StatsCard>
+
+        <StatsCard title={t('most_demanded_skills')} className="skills-card">
+          <SkillsTable skills={stats.top_skills} />
+        </StatsCard>
+
+        <StatsCard title={t('work_mode_distribution')}>
+          {Object.entries(stats.operating_mode_stats).map(([mode, count]) => (
+            <StatsRow 
+              key={mode}
+              label={t(mode.toLowerCase()) || t('not_specified')}
+              value={count}
+            />
+          ))}
+        </StatsCard>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+
+==================================================
+
+File: src/components/dashboard/SkillsTable.jsx
+----------------------------------------------
+import React from 'react';
+import '../../styles/SkillsTable.css';
+
+const SkillsTable = ({ skills, maxItems = 10 }) => {
+  const skillsArray = Object.entries(skills)
+    .slice(0, maxItems)
+    .map(([skill, count], index) => ({
+      skill,
+      count,
+      rank: index + 1
+    }));
+
+  const midPoint = Math.ceil(skillsArray.length / 2);
+  const firstColumn = skillsArray.slice(0, midPoint);
+  const secondColumn = skillsArray.slice(midPoint);
+
+  return (
+    <div className="skills-table">
+      <div className="skills-column">
+        {firstColumn.map(({ skill, count, rank }) => (
+          <div key={skill} className="skills-table-row">
+            <span className="skill-rank">{rank}.</span>
+            <span className="skill-name">{skill}</span>
+            <span className="skill-count">{count}</span>
+          </div>
+        ))}
+      </div>
+      <div className="skills-column">
+        {secondColumn.map(({ skill, count, rank }) => (
+          <div key={skill} className="skills-table-row">
+            <span className="skill-rank">{rank}.</span>
+            <span className="skill-name">{skill}</span>
+            <span className="skill-count">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default SkillsTable;
+
+==================================================
+
+File: src/components/dashboard/StatsCard.jsx
+--------------------------------------------
+import React from 'react';
+import '../../styles/StatsCard.css';
+
+const StatsCard = ({ title, children, className }) => {
+  return (
+    <div className={`stats-card ${className || ''}`}>
+      <h3 className="stats-card-title">{title}</h3>
+      <div className="stats-card-content">
+        {children}
+      </div>
+    </div>
+  );
+};
+export default StatsCard;
+
+==================================================
+
+File: src/components/dashboard/StatsRow.jsx
+-------------------------------------------
+import React from 'react';
+import '../../styles/StatsRow.css';
+
+const StatsRow = ({ label, value }) => (
+  <div className="stats-row">
+    <span className="stats-label">{label}</span>
+    <span className="stats-value">{value}</span>
+  </div>
+);
+
+export default StatsRow;
+
+==================================================
+
+File: src/config/DateFormater.js
+--------------------------------
+export const formatDate = (dateString, language) => {
+    const date = new Date(dateString);
+    const options = {
+      minute: "numeric",
+      hour: "numeric",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    };
+  
+    return language === "pl" 
+      ? date.toLocaleDateString("pl-PL", options)
+      : date.toLocaleDateString("en-US", options);
+  };
+
+==================================================
+
+File: src/config/filterConfig.js
+--------------------------------
+export const initialFilters = {
+  operating_mode: "",
+  experience: "",
+  skills: [],
+  location: "",
+  scraped_date: "",
+  source: "",
+};
+
+export const filterSections = [
+  {
+    id: 'operating_mode',
+    titleKey: 'work_mode', // we'll use titleKey instead of title
+    defaultOpen: true,
+    options: [
+      { value: 'Remote', labelKey: 'remote' },
+      { value: 'Hybrid', labelKey: 'hybrid' },
+      { value: 'Office', labelKey: 'office' },
+    ]
+  },
+  {
+    id: 'experience',
+    titleKey: 'experience_level',
+    defaultOpen: true,
+    options: [
+      { value: 'Trainee', labelKey: 'trainee' },
+      { value: 'Junior', labelKey: 'junior' },
+      { value: 'Mid', labelKey: 'mid' },
+      { value: 'Senior', labelKey: 'senior' },
+      { value: 'Expert', labelKey: 'expert' },
+    ]
+  },
+  {
+    id: 'skills',
+    titleKey: 'technologies',
+    defaultOpen: true,
+    isSkillSection: true,
+    topSkills: []
+  },
+  {
+    id: 'location',
+    titleKey: 'location',
+    defaultOpen: false,
+    options: [
+      { value: 'Warszawa', labelKey: 'warsaw' },
+      { value: 'Kraków', labelKey: 'krakow' },
+      { value: 'Wrocław', labelKey: 'wroclaw' },
+      { value: 'Poznań', labelKey: 'poznan' },
+      { value: 'Gdańsk', labelKey: 'gdansk' },
+    ]
+  },
+  {
+    id: 'scraped_date',
+    titleKey: 'dates_from',
+    defaultOpen: false,
+    options: []
+  },
+  {
+    id: 'source',
+    titleKey: 'source',
+    defaultOpen: false,
+    options: [
+      { value: 'Pracuj.pl', labelKey: 'pracuj_pl' },
+      { value: 'NoFluffJobs', labelKey: 'nofluffjobs' },
+      { value: 'JustJoinIT', labelKey: 'justjoinit' },
+      { value: 'TheProtocol', labelKey: 'theprotocol' },
+    ]
+  }
+];
+
+==================================================
+
+File: src/config/translations.js
+--------------------------------
+export const translations = {
+    pl: {
+      // Navigation
+      "home": "Strona Główna",
+      "jobs": "Oferty Pracy",
+      "login": "Zaloguj się",
+      "register": "Zarejestruj się",
+      "logout": "Wyloguj się",
+  
+      // Dashboard
+      "overview": "Przegląd",
+      "market_overview": "Przegląd Rynku",
+      "experience_distribution": "Rozkład Doświadczenia",
+      "average_salary": "Średnie Wynagrodzenie",
+      "most_demanded_skills": "Najbardziej Poszukiwane Umiejętności",
+      "work_mode_distribution": "Rozkład Trybów Pracy",
+      "today": "Dziś",
+      "last_7_days": "Ostatnie 7 dni",
+      "last_14_days": "Ostatnie 14 dni",
+      "last_30_days": "Ostatnie 30 dni",
+      "not_available": "Niedostępne",
+  
+      // Experience Levels
+      "trainee": "Praktykant",
+      "junior": "Junior",
+      "mid": "Mid",
+      "senior": "Senior",
+      "expert": "Ekspert",
+  
+      // Work Modes
+      "remote": "Zdalnie",
+      "hybrid": "Hybrydowo",
+      "office": "Stacjonarnie",
+  
+      // Filter Panel
+      "filters": "Filtry",
+      "clear_filters": "Wyczyść filtry",
+      "apply_filters": "Zastosuj filtry",
+      "found_jobs": "Oferty pracy: {{count}}",
+      "work_mode": "Tryb pracy",
+      "experience_level": "Poziom doświadczenia",
+      "technologies": "Technologie",
+      "location": "Lokalizacja",
+      "dates_from": "Data od",
+      "source": "Źródło",
+      "search_technology": "Wpisz nazwę technologii...",
+  
+      // Job Listings
+      "show_summary": "Pokaż szczegóły",
+      "hide_summary": "Ukryj szczegóły",
+      "no_results": "Nie znaleziono wyników spełniających kryteria.",
+      "loading": "Ładowanie...",
+      "try_again": "Spróbuj ponownie",
+      "error_message": "Wystąpił błąd. Spróbuj ponownie później.",
+  
+      // Auth Forms
+      "username": "Nazwa użytkownika",
+      "password": "Hasło",
+      "submit": "Zatwierdź",
+      "no_account": "Nie masz konta?",
+      "invalid_credentials": "Nieprawidłowa nazwa użytkownika lub hasło",
+      "username_exists": "Użytkownik o takiej nazwie już istnieje",
+      "server_error": "Wystąpił błąd serwera. Spróbuj ponownie później",
+      "registration_successful": "Rejestracja zakończona pomyślnie! Za chwilę zostaniesz przekierowany do strony logowania",
+      "field_required": "To pole jest wymagane",
+
+      // Locations
+      "warsaw": "Warszawa",
+      "krakow": "Kraków",
+      "wroclaw": "Wrocław",
+      "poznan": "Poznań",
+      "gdansk": "Gdańsk",
+      "pracuj_pl": "Pracuj.pl",
+      "nofluffjobs": "NoFluffJobs",
+      "justjoinit": "JustJoinIT",
+      "theprotocol": "TheProtocol",
+
+
+      "my_applications": "Moje Aplikacje",
+      "applied": "Aplikowano",
+      "status": "Status",
+      "company": "Firma",
+      "notes": "Notatki",
+      "add_note": "Dodaj notatkę",
+      "add_note_placeholder": "Wpisz notatkę...",
+      "delete_application": "Usuń aplikację",
+      "confirm_delete_application": "Czy na pewno chcesz usunąć tę aplikację?",
+      "failed_load_applications": "Nie udało się załadować aplikacji",
+      "failed_add_note": "Nie udało się dodać notatki",
+      "failed_delete_note": "Nie udało się usunąć notatki",
+      "failed_delete_application": "Nie udało się usunąć aplikacji",
+      "failed_update_status": "Nie udało się zaktualizować statusu",
+      "applied": "Aplikowano",
+      "interviewing": "W trakcie rozmów",
+      "rejected": "Odrzucono",
+      "accepted": "Zaakceptowano",
+      "show_details": "Pokaż szczegóły",
+      "hide_details": "Ukryj szczegóły",
+
+      "page_not_found": "Strona nie została znaleziona",
+      "return_home": "Wróć do strony głównej",
+      "no_applications_yet": "Brak aplikacji",
+      "no_applications_message": "Nie masz jeszcze żadnych zapisanych aplikacji. Przeglądaj oferty pracy i zapisuj te, które Cię interesują.",
+      "browse_jobs": "Przeglądaj oferty",
+    },
+    en: {
+      // Navigation
+      "home": "Home",
+      "jobs": "Jobs",
+      "login": "Login",
+      "register": "Register",
+      "logout": "Logout",
+  
+      // Dashboard
+      "overview": "Overview",
+      "market_overview": "Market Overview",
+      "experience_distribution": "Experience Distribution",
+      "average_salary": "Average Salary",
+      "most_demanded_skills": "Most In-Demand Skills",
+      "work_mode_distribution": "Work Mode Distribution",
+      "today": "Today",
+      "last_7_days": "Last 7 days",
+      "last_14_days": "Last 14 days",
+      "last_30_days": "Last 30 days",
+      "not_available": "Not available",
+  
+      // Experience Levels
+      "trainee": "Trainee",
+      "junior": "Junior",
+      "mid": "Mid",
+      "senior": "Senior",
+      "expert": "Expert",
+  
+      // Work Modes
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "office": "Office",
+  
+      // Filter Panel
+      "filters": "Filters",
+      "clear_filters": "Clear filters",
+      "apply_filters": "Apply filters",
+      "found_jobs": "Found {{count}} jobs",
+      "work_mode": "Work mode",
+      "experience_level": "Experience level",
+      "technologies": "Technologies",
+      "location": "Location",
+      "dates_from": "Dates from",
+      "source": "Source",
+      "search_technology": "Type technology name...",
+  
+      // Job Listings
+      "show_summary": "Show summary",
+      "hide_summary": "Hide summary",
+      "no_results": "No results matching your criteria.",
+      "loading": "Loading...",
+      "try_again": "Try again",
+      "error_message": "An error occurred. Please try again later.",
+  
+      // Auth Forms
+      "username": "Username",
+      "password": "Password",
+      "submit": "Submit",
+      "no_account": "Don't have an account?",
+      "invalid_credentials": "Invalid username or password",
+      "username_exists": "Username already exists",
+      "server_error": "Server error occurred. Please try again later",
+      "field_required": "This field is required",
+
+      "warsaw": "Warsaw",
+      "krakow": "Cracow",
+      "wroclaw": "Wroclaw",
+      "poznan": "Poznan",
+      "gdansk": "Gdansk",
+      "pracuj_pl": "Pracuj.pl",
+      "nofluffjobs": "NoFluffJobs",
+      "justjoinit": "JustJoinIT",
+      "theprotocol": "TheProtocol",
+
+      "my_applications": "My Applications",
+      "applied": "Applied",
+      "status": "Status",
+      "company": "Company",
+      "notes": "Notes",
+      "add_note": "Add Note",
+      "add_note_placeholder": "Type a note...",
+      "delete_application": "Delete Application",
+      "confirm_delete_application": "Are you sure you want to delete this application?",
+      "failed_load_applications": "Failed to load applications",
+      "failed_add_note": "Failed to add note",
+      "failed_delete_note": "Failed to delete note",
+      "failed_delete_application": "Failed to delete application",
+      "failed_update_status": "Failed to update status",
+      "applied": "Applied",
+      "interviewing": "Interviewing",
+      "rejected": "Rejected",
+      "accepted": "Accepted",
+      "show_details": "Show details",
+      "hide_details": "Hide details",
+
+      "page_not_found": "Page not found",
+      "return_home": "Return to home",
+      "no_applications_yet": "No applications yet",
+      "no_applications_message": "You haven't saved any job applications yet. Browse through job listings and save the ones you're interested in.",
+      "browse_jobs": "Browse jobs"
+    }
+  };
+
+==================================================
+
+File: src/pages/Applications.jsx
+--------------------------------
+import JobApplications from "../components/JobApplications"
+
+function Applications () {
+    return (
+        <JobApplications />
+    )
+}
+
+export default Applications
+
+==================================================
+
+File: src/pages/Home.jsx
+------------------------
+import Dashboard from "../components/dashboard/Dashboard";
+
+function Home() {
+  return (
+    <div className="home-page">
+      <Dashboard />
+      {/* Add featured jobs or statistics later */}
+    </div>
+  );
+}
+export default Home;
+
+
+==================================================
+
+File: src/pages/JobsPage.jsx
+----------------------------
+import { useState, useEffect, useCallback } from "react";
+import api from "../api";
+import Job from "../components/Job";
+import FilterPanel from "../components/FilterPanel";
+import Pagination from "../components/Pagination";
+import { useLanguage } from "../contexts/LanguageContext";
+import "../styles/JobsPage.css";
+
+function JobsPage() {
+  const [jobs, setJobs] = useState([]);
+  const [nextUrl, setNextUrl] = useState(null);
+  const [previousUrl, setPreviousUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { t } = useLanguage();
+
+  const fetchJobs = useCallback(async (params = "") => {
+    try {
+      setLoading(true);
+      const response = await api.get(`api/jobs/filter${params}`);
+      const jobs = response.data;
+
+      setJobs(jobs);
+      setNextUrl(jobs.next ? `?${jobs.next.split("?")[1]}` : null);
+      setPreviousUrl(jobs.previous ? `?${jobs.previous.split("?")[1]}` : null);
+    } catch (err) {
+      setError(t("error_message"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleFilterChange = useCallback((filters) => {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (key === "skills") {
+        value.forEach((skill) => params.append("skills", skill));
+      } else if (value) {
+        params.append(key, value);
+      }
+    });
+
+    fetchJobs(`?${params}`);
+  });
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  if (loading) {
+    return (
+      <div className="jobs-page">
+        <div className="jobs-layout">
+          <FilterPanel onFilterChange={handleFilterChange} />
+          <main className="jobs-container">
+            <div className="loading-state">{t("loading")}</div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  const renderContent = () => {
+    if (loading) {
+      return <div className="loading-state">{t("loading")}</div>;
+    }
+
+    if (error) {
+      return (
+        <div className="error-state">
+          <p>{error}</p>
+          <button onClick={() => fetchJobs()}>{t("try_again")}</button>
+        </div>
+      );
+    }
+
+    if (jobs.count === 0) {
+      return <div className="no-jobs-state">{t("no_results")}</div>;
+    }
+
+    return (
+      <>
+        <div className="jobs-list">
+          {jobs.results?.map((job) => (
+            <Job key={job.id} job={job} />
+          ))}
+        </div>
+        <Pagination
+          next={nextUrl}
+          previous={previousUrl}
+          onPageChange={fetchJobs}
+        />
+      </>
+    );
+  };
+
+  return (
+    <div className="jobs-page">
+      <div className="jobs-layout">
+        <FilterPanel
+          onFilterChange={handleFilterChange}
+          jobCount={jobs.count}
+          loading={loading}
+        />
+        <main className="jobs-container">{renderContent()}</main>
+      </div>
+    </div>
+  );
+}
+
+export default JobsPage;
+
+
+==================================================
+
+File: src/pages/Login.jsx
+-------------------------
+import Form from "../components/Form"
+
+function Login() {
+    return <Form route="api/token/pair" method="login"/>
+}
+
+
+export default Login
+
+==================================================
+
+File: src/pages/NotFound.jsx
+----------------------------
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../contexts/LanguageContext";
+import "../styles/NotFound.css";
+
+function NotFound() {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  return (
+    <div className="not-found-container">
+      <h1>404</h1>
+      <p>{t("page_not_found")}</p>
+      <button 
+        className="return-home-button" 
+        onClick={() => navigate("/")}
+      >
+        {t("return_home")}
+      </button>
+    </div>
+  );
+}
+
+export default NotFound;
+
+==================================================
+
+File: src/pages/Register.jsx
+----------------------------
+import Form from "../components/Form"
+
+function Register() {
+    return <Form route="/api/auth/register" method="register"/>
+}
+
+export default Register
+
+==================================================
+

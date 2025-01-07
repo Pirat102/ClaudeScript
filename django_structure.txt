@@ -1,0 +1,2614 @@
+Project Structure for: /home/pirat/Desktop/pyth/scraper/backend
+==================================================
+
+Directory Structure:
+--------------------
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── manage.py
+│   ├── requirements.txt
+├── logs/
+├── backend/
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── celery.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+├── jobs/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── api.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── summarizer.py
+│   ├── tasks.py
+│   ├── tests.py
+│   ├── views.py
+│   ├── scrapers/
+│   │   ├── base_scraper.py
+│   │   ├── justjoin_scraper.py
+│   │   ├── nofluffjobs.py
+│   │   ├── pracuj_scraper.py
+│   │   ├── protocol_scraper.py
+│   ├── management/
+│   │   ├── __init__.py
+│   │   ├── commands/
+│   │   │   ├── __init__.py
+│   │   │   ├── cleanup_salaries.py
+│   │   │   ├── remove_duplicates.py
+│   │   │   ├── run_scrapers.py
+│   │   │   ├── test_salary_standardization.py
+│   │   │   ├── update_job_source.py
+│   ├── utils/
+│   │   ├── salary_standardizer.py
+
+File Contents:
+==================================================
+
+File: .env.example
+------------------
+ENVIRONMENT=development
+
+# API KEYS
+OPENAI_API_KEY=
+DJANGO_SECRET_KEY=
+
+# DB
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_HOST=
+POSTGRES_PORT=
+
+FLOWER_BASIC_AUTH=
+
+==================================================
+
+File: Dockerfile
+----------------
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    gcc \
+    python3-dev
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+==================================================
+
+File: manage.py
+---------------
+#!/usr/bin/env python
+"""Django's command-line utility for administrative tasks."""
+import os
+import sys
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+
+if __name__ == '__main__':
+    main()
+
+
+==================================================
+
+File: requirements.txt
+----------------------
+amqp==5.2.0
+annotated-types==0.7.0
+anyio==4.6.2.post1
+asgiref==3.8.1
+beautifulsoup4==4.12.3
+billiard==4.2.1
+bs4==0.0.2
+celery==5.4.0
+certifi==2024.8.30
+cffi==1.17.1
+charset-normalizer==3.4.0
+click==8.1.7
+click-didyoumean==0.3.1
+click-plugins==1.1.1
+click-repl==0.3.0
+contextlib2==21.6.0
+cron-descriptor==1.4.5
+cryptography==43.0.3
+distro==1.9.0
+Django==5.1.2
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
+django-cors-headers==4.6.0
+django-debug-toolbar==4.4.6
+django-environ==0.11.2
+django-extensions==3.2.3
+django-ninja==1.3.0
+django-ninja-extra==0.21.4
+django-ninja-jwt==5.3.4
+django-redis==5.4.0
+django-timezone-field==7.0
+flower==2.0.1
+gunicorn==23.0.0
+h11==0.14.0
+httpcore==1.0.6
+httpx==0.27.2
+humanize==4.11.0
+idna==3.10
+injector==0.22.0
+jiter==0.7.0
+kombu==5.4.2
+openai==1.53.1
+packaging==24.2
+prometheus_client==0.21.0
+prompt_toolkit==3.0.48
+psycopg2-binary==2.9.10
+pycparser==2.22
+pydantic==2.9.2
+pydantic_core==2.23.4
+PyJWT==2.9.0
+python-crontab==3.2.0
+python-dateutil==2.9.0.post0
+pytz==2024.2
+redis==5.2.0
+requests==2.32.3
+six==1.16.0
+sniffio==1.3.1
+soupsieve==2.6
+sqlparse==0.5.1
+tornado==6.4.1
+tqdm==4.66.6
+typing_extensions==4.12.2
+tzdata==2024.2
+urllib3==2.2.3
+vine==5.1.0
+wcwidth==0.2.13
+
+
+==================================================
+
+File: backend/__init__.py
+-------------------------
+from .celery import app as celery_app
+
+__all__ = ('celery_app',)
+
+==================================================
+
+File: backend/asgi.py
+---------------------
+"""
+ASGI config for backend project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
+"""
+
+import os
+
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
+application = get_asgi_application()
+
+
+==================================================
+
+File: backend/celery.py
+-----------------------
+import os
+from celery import Celery
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
+
+app = Celery("backend")
+
+app.config_from_object('django.conf:settings', namespace='CELERY')
+
+app.conf.update(
+    task_acks_late=True,
+    task_track_started=True,
+    broker_connection_retry_on_startup=True 
+    
+)
+
+app.autodiscover_tasks()
+
+
+
+==================================================
+
+File: backend/settings.py
+-------------------------
+from pathlib import Path
+import environ
+import os
+from datetime import timedelta
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+ENVIRONMENT = env('ENVIRONMENT')
+
+# Fetch the API key
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+
+
+# SECURITY WARNING: don't run with debug turned on in production!
+if ENVIRONMENT == 'development':
+    DEBUG = True
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.42']
+    CORS_ALLOW_ALL_ORIGINS = True
+    INTERNAL_IPS = ["127.0.0.1"]
+    DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+}
+else:
+    DEBUG = False
+    ALLOWED_HOSTS=["devradar.work","www.devradar.work","128.140.62.90"]
+    CORS_ALLOWED_ORIGINS=["https://devradar.work", "https://www.devradar.work"]
+
+
+# CORS_ALLOW_HEADERS = [
+#     'accept',
+#     'accept-encoding',
+#     'authorization',
+#     'content-type',
+#     'origin',
+#     'pragma',
+#     'cache-control',
+# ]
+
+# Application definition
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    "django_extensions",
+    "jobs",
+    "ninja_extra",
+    "corsheaders",
+    "django_celery_beat",
+    "django_celery_results",
+    "debug_toolbar",
+]
+
+MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+]
+
+ROOT_URLCONF = 'backend.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'backend.wsgi.application'
+
+
+# Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB"),
+        "USER": env("POSTGRES_USER"),
+        "PASSWORD": env("POSTGRES_PASSWORD"),
+        "HOST": env("POSTGRES_HOST"),
+        "PORT": env("POSTGRES_PORT"),
+    }
+}
+
+
+
+# Password validation
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.1/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'Europe/Warsaw'
+
+USE_I18N = True
+
+USE_TZ = True
+
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.1/howto/static-files/
+
+STATIC_URL = 'static/'
+STATIC_ROOT = 'app/static'
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+NINJA_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://devradar.work',
+    'https://www.devradar.work'
+]
+
+# Security settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# Redis cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "RETRY_ON_TIMEOUT": True,
+            "MAX_CONNECTIONS": 1000,
+            "IGNORE_EXCEPTIONS": True,
+        }
+    }
+}
+# Cache timeouts
+CACHE_TTL = {
+    'filter_options': 60 * 60 * 24,  # 24 hours
+    'job_stats': 60 * 15,  # 15 minutes
+}
+
+# Celery
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_EXTEND = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Logging
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} - {name} - {levelname} - {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        
+        'console':{
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'error.log'),
+            'maxBytes': 1024 * 1024 * 5,  
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'ERROR',
+             
+        },
+        'info_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'info.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        'debug_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'debug.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'DEBUG',
+        }
+    },
+    'loggers': {
+        'scraper': {
+            'handlers': ['console','error_file', 'info_file', 'debug_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+
+
+
+
+==================================================
+
+File: backend/urls.py
+---------------------
+from django.contrib import admin
+from django.urls import include, path
+from jobs.api import api
+from debug_toolbar.toolbar import debug_toolbar_urls
+
+urlpatterns = [
+    path('management/', admin.site.urls),
+    path("api/", api.urls),
+] + debug_toolbar_urls() 
+
+
+
+==================================================
+
+File: backend/wsgi.py
+---------------------
+"""
+WSGI config for backend project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.1/howto/deployment/wsgi/
+"""
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
+application = get_wsgi_application()
+
+
+==================================================
+
+File: jobs/__init__.py
+----------------------
+
+
+==================================================
+
+File: jobs/admin.py
+-------------------
+from django.contrib import admin
+from jobs.models import *
+
+
+class JobView(admin.ModelAdmin):
+    list_display = ("id", 'title', 'company', 'salary', 'experience', 'skills')
+
+
+# Register your models here.
+admin.site.register(Job, JobView)
+admin.site.register(Requested)
+admin.site.register(JobApplication)
+admin.site.register(ApplicationNote)
+
+==================================================
+
+File: jobs/api.py
+-----------------
+from collections import Counter
+from datetime import datetime, timedelta, time
+from django.shortcuts import get_object_or_404
+from ninja import Query
+from typing import Dict, Any
+from jobs.models import Job, JobApplication, ApplicationNote
+from jobs.schemas import *
+from django.contrib.auth.models import User
+from ninja_extra.permissions import AllowAny
+from ninja_jwt.controller import NinjaJWTDefaultController
+from ninja_extra import NinjaExtraAPI, api_controller, route
+from ninja_jwt.authentication import JWTAuth
+from ninja_extra.pagination import paginate, PageNumberPaginationExtra, PaginatedResponseSchema
+from jobs.utils.salary_standardizer import average_salary
+from django.utils import timezone
+from django.db.models import Exists, OuterRef, Subquery
+from django.views.decorators.cache import cache_page
+from ninja.decorators import decorate_view
+
+api = NinjaExtraAPI()
+
+@api_controller('/auth', tags=['Authentication'], permissions=[AllowAny])
+class AuthController:
+
+    @route.post('register', response={200: Dict, 401: Dict})
+    def register(self, user_data: UserRegistrationSchema) -> Dict:
+        if not user_data.username or not user_data.password:
+            return 401, {"success": False, "message": "Username and password are required"}
+        
+        if User.objects.filter(username=user_data.username).exists():
+            return 401, {"success": False, "message": "Username already exists"}
+        
+        try:
+            User.objects.create_user(
+                username=user_data.username,
+                password=user_data.password
+            )
+            return 200, {"success": True, "message": "Registration successful"}
+        except Exception:
+            return 401, {"success": False, "message": "Invalid registration data"}
+
+@api_controller("/jobs")
+class JobController:
+    @route.get("", response=PaginatedResponseSchema[JobSchema])
+    @paginate(PageNumberPaginationExtra, page_size=25)
+    def get_jobs(self):
+        return Job.objects.all()
+    
+    
+    @route.get("stats", response=Dict[str, Any])
+    @decorate_view(cache_page(60 * 60))
+    def stats(self, filters: JobFilterSchema = Query(...)):
+        today = timezone.make_aware(datetime.combine(datetime.now().date(), time.min))
+        last_week = today - timedelta(days=7)
+        last_two_weeks = today - timedelta(days=14)
+        last_month = today - timedelta(days=30)
+        jobs = Job.objects.defer('description', 'url', 'location', 'title', 'summary', 'company', 'scraped_date', )
+        jobs = filters.filter_queryset(jobs)
+    
+        skill_freq = {}
+        exp_stats = Counter()
+        source_stats = Counter()
+        work_mode = Counter()
+        salary_count = 0
+        min_total = 0
+        max_total = 0
+        today_jobs = 0
+        last_week_jobs = 0
+        last_two_weeks_jobs = 0
+        last_month_jobs = 0
+        
+        for job in jobs:
+            # Process all stats in single loop
+            exp_stats[job.experience] += 1
+            source_stats[job.source] += 1
+            work_mode[job.operating_mode] += 1
+            
+            for skill in job.skills.keys():
+                skill_freq[skill] = skill_freq.get(skill, 0) + 1
+            
+            if job.salary:
+                min_value, max_value = average_salary(job.salary)
+                min_total += min_value
+                max_total += max_value
+                salary_count += 1
+            
+            if job.created_at > today:
+                today_jobs +=1
+            if job.created_at > last_week:
+                last_week_jobs +=1
+            if job.created_at > last_two_weeks:
+                last_two_weeks_jobs +=1
+            if job.created_at > last_month:
+                last_month_jobs +=1
+                
+        if salary_count > 0:
+            avg_min = min_total / salary_count
+            avg_max = max_total / salary_count
+            salary = f"{int(avg_min)} - {int(avg_max)} PLN"
+        else:
+            salary = ""
+            
+        
+        def sort_dict(d):
+            return dict(sorted(d.items(), key=lambda x: x[1], reverse=True))
+        
+    
+        return {
+            "top_skills": sort_dict(skill_freq),
+            "exp_stats": sort_dict(exp_stats),
+            "source_stats": sort_dict(source_stats), 
+            "operating_mode_stats": sort_dict(work_mode),
+            "salary_stats": salary,
+            "trends": {
+                "today": today_jobs,
+                "last_7_days": last_week_jobs,
+                "last_14_days": last_two_weeks_jobs,
+                "last_30_days": last_month_jobs,
+        },
+        }
+    
+
+    @route.get("/filter", response=PaginatedResponseSchema[JobSchema])
+    @paginate(PageNumberPaginationExtra, page_size=25)
+    def list_jobs(self, request, filters: JobFilterSchema=Query(...)):
+        jobs = Job.objects.defer('description', 'created_at')
+        jobs = filters.filter_queryset(jobs)
+        
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            try:
+                jwt_auth = JWTAuth()
+                user = jwt_auth.authenticate(request, token)
+                
+                if user:
+                    # Annotate both has_applied and application_id
+                    applications_subquery = JobApplication.objects.filter(
+                        job=OuterRef('id'),
+                        user=user
+                    )
+                    jobs = jobs.annotate(
+                        has_applied=Exists(applications_subquery),
+                        application_id=Subquery(
+                            applications_subquery.values('id')
+                        )
+                    )
+            except Exception as e:
+                print(f"Authentication failed: {e}")
+                pass
+        
+        return jobs
+    
+    
+    # Light endpoint for fetching dates and top skills on jobs page
+    @route.get("filter-options", response=Dict[str, Any])
+    @decorate_view(cache_page(60 * 60))
+    def get_filter_options(self):
+        
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        
+        # Get top skills 
+        jobs = Job.objects.filter(scraped_date__gte=thirty_days_ago).only('skills', 'scraped_date')
+        skills = {}
+        for job in jobs:
+            for skill in job.skills.keys():
+                skills[skill] = skills.get(skill, 0) + 1
+        top_skills = sorted(skills.items(), key=lambda x: x[1], reverse=True)
+        top_skills = [skill[0] for skill in top_skills]
+
+        # Get dates
+        dates = (jobs
+                .dates('scraped_date', 'day', 'DESC')
+                .distinct())
+        
+        data = {
+            "top_skills": top_skills,
+            "available_dates": list(dates),
+        }
+
+        return data
+    
+
+@api_controller("/applications", auth=JWTAuth())
+class JobApplicationController:
+    @route.post("", response={200: JobApplicationSchema, 400: Dict})
+    def create_application(self, request, payload: CreateApplicationSchema):
+        try:
+            job = Job.objects.get(id=payload.job_id)
+        except Exception as e:
+            return 400, {"success": False, f"message {payload}": f"Job not found {payload.id}"}
+        
+        if JobApplication.objects.filter(user=request.user, job_id=payload.job_id):
+            return 400, {"success": False, "message": "Already applied to this job"}
+        
+        application = JobApplication.objects.create(
+            user = request.user,
+            job_id=payload.job_id
+        )
+        return application
+        
+    @route.get("", response=List[JobApplicationSchema])
+    def get_user_applications(self, request):
+        
+        return JobApplication.objects.filter(user=request.user)
+        
+    @route.post("{application_id}/notes", response=ApplicationNoteSchema)
+    def add_note(self, request, application_id: int, note_data: CreateApplicationNoteSchema):
+        application = get_object_or_404(JobApplication, id=application_id, user=request.user)
+        note = ApplicationNote.objects.create(
+            application=application,
+            content=note_data.content
+        )
+        return note
+    
+    @route.patch("{application_id}", response=JobApplicationSchema)
+    def update_application_status(self, request, application_id: int, status_data: UpdateStatusSchema):
+        application = get_object_or_404(JobApplication, id=application_id, user=request.user)
+        application.status = status_data.status
+        application.save()
+        return application
+    
+    @route.delete("{application_id}", response={200: Dict, 404: Dict})
+    def delete_application(self, request, application_id: int):
+        application = get_object_or_404(JobApplication, id=application_id, user=request.user)
+        application.delete()
+        return 200, {"success": True, "message": "Application deleted"}
+    
+    @route.delete("{application_id}/notes/{note_id}", response={200: Dict, 404: Dict})
+    def delete_note(self, request, note_id: int, application_id):
+        application = get_object_or_404(JobApplication, id=application_id, user=request.user)
+        note = get_object_or_404(ApplicationNote, application=application, id=note_id)
+        note.delete()
+        return 200, {"success": True, "message": "Note deleted"}
+        
+        
+    
+
+    
+    
+api.register_controllers(NinjaJWTDefaultController, AuthController, JobController, JobApplicationController)
+
+
+==================================================
+
+File: jobs/apps.py
+------------------
+from django.apps import AppConfig
+
+
+class ApiConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'jobs'
+
+
+==================================================
+
+File: jobs/models.py
+--------------------
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import User
+
+
+class Job(models.Model):
+    title = models.CharField(max_length=255)
+    company = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    operating_mode = models.CharField(max_length=15, null=True, blank=True)
+    salary = models.CharField(max_length=25, blank=True, null=True)
+    experience = models.CharField(max_length=25)
+    skills = models.JSONField()
+    description = models.TextField(null=True, blank=True)
+    url = models.URLField()
+    scraped_date = models.DateTimeField(auto_now=timezone.now)
+    summary = models.TextField(null=True, blank=True)
+    source = models.CharField(max_length=20, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"ID: {self.id} - Title: {self.title}"
+    
+    class Meta:
+        ordering = ['-scraped_date']
+        indexes = [
+            models.Index(fields=['-scraped_date']),
+            models.Index(fields=['operating_mode']),
+            models.Index(fields=['experience']),
+            models.Index(fields=['source']),
+            # Composite indexes for common filter combinations
+            models.Index(fields=['operating_mode', 'experience', '-scraped_date']),
+        ]
+        
+    def get_sorted_skills(self):
+        """
+        Returns skills sorted by level priority and then alphabetically.
+        Format: {skill: level}
+        """
+        level_priority = {
+            'master': 6,
+            'advanced': 5,
+            'senior': 4,
+            'regular': 3,
+            'junior': 2,
+            'nice to have': 1
+        }
+        
+        # Convert skills dict to list of tuples for sorting
+        skills_list = list(self.skills.items())
+        
+        # Sort first by level priority (descending) then by skill name (ascending)
+        sorted_skills = sorted(
+            skills_list,
+            key=lambda x: (-level_priority.get(x[1].lower(), 0), x[0])
+        )
+        
+        return dict(sorted_skills)
+    
+    
+class Requested(models.Model):
+    url = models.URLField()
+    title = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now=timezone.now)
+    
+    
+    def __str__(self):
+        return f"ID: {self.id} - Title: {self.title} - {self.created_at.strftime('%d/%m/%Y %H:%M')} - Source: {self.url.replace('www.', '').replace('https://', '').split('.')[0]}"
+    
+    
+class JobApplication(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    applied_date = models.DateTimeField(auto_now=timezone.now)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('APPLIED', 'Applied'),
+            ('INTERVIEWING', 'Interviewing'),
+            ('REJECTED', 'Rejected'),
+            ('ACCEPTED', 'Accepted'),
+        ],
+        default='APPLIED'
+    )
+
+    class Meta:
+        # Ensure a user can't apply to the same job twice
+        unique_together = ['user', 'job']
+        ordering = ['-applied_date']
+        
+class ApplicationNote(models.Model):
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE, related_name='notes')
+    content = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+
+==================================================
+
+File: jobs/schemas.py
+---------------------
+from ninja import Schema, FilterSchema
+from typing import Optional, List
+from django.db.models import Q
+from datetime import datetime, date
+
+
+class ErrorSchema(Schema):
+    message: str
+    
+class UserRegistrationSchema(Schema):
+    username: str
+    password: str
+    email: Optional[str] = None
+
+class JobSchema(Schema):
+    id: int
+    title: str
+    company: Optional[str]
+    location: Optional[str]
+    operating_mode: Optional[str]
+    salary: Optional[str]
+    experience: Optional[str]
+    skills: dict 
+    url: str
+    scraped_date: datetime
+    summary: Optional[str]
+    source: Optional[str]
+    has_applied: bool = False
+    application_id: Optional[int] = None
+    
+    @staticmethod
+    def resolve_skills(obj):
+        return obj.get_sorted_skills()
+    
+
+class JobFilterSchema(FilterSchema):
+    title: Optional[str] = None
+    company: Optional[str] = None
+    location: Optional[str] = None
+    scraped_date: Optional[date] = None
+    experience: Optional[str] = None
+    operating_mode: Optional[str] = None
+    salary: Optional[str] = None
+    skills: Optional[List[str]] = None
+    source: Optional[str] = None
+
+    def filter_queryset(self, queryset):
+        filters = {
+            'title__icontains': self.title,
+            'location__icontains': self.location,
+            'scraped_date__gt': self.scraped_date,
+            'experience__exact': self.experience,
+            'operating_mode__exact': self.operating_mode,
+            'source__exact': self.source
+        }
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+        queryset = queryset.filter(**filters)
+
+        # Custom filter logic for skills (AND logic)
+        if self.skills:
+            skills_query = Q()
+            for skill in self.skills:
+                skills_query &= Q(skills__has_key=skill)
+            queryset = queryset.filter(skills_query)
+        
+        return queryset
+    
+class ApplicationNoteSchema(Schema):
+    id: Optional[int] = None
+    content: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class JobApplicationSchema(Schema):
+    id: int
+    job: JobSchema
+    applied_date: datetime
+    status: str
+    notes: List[ApplicationNoteSchema]
+    
+class UpdateStatusSchema(Schema):
+    status: str
+    
+class CreateApplicationSchema(Schema):
+    job_id: int
+    
+class CreateApplicationNoteSchema(Schema):
+    content: str
+
+==================================================
+
+File: jobs/summarizer.py
+------------------------
+from openai import OpenAI
+from django.conf import settings
+
+# Use the API key
+api_key = settings.OPENAI_API_KEY
+
+client = OpenAI()
+
+def summarize_text(text: str) -> str:
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """
+                    Create concise job summaries (max 250 words) with the following structure:
+
+                    1. A brief overview paragraph (<p>) explaining core responsibilities (2-3 sentences).
+
+                    2. Two clearly separated sections with HTML formatting:
+                       
+                       <strong>Necessary skills:</strong>
+                       <ul>
+                       <li> List key required skills (max 6 points) </li>
+                       <li> Use <strong> tags for technical skills </li>
+                       <li> Keep each point brief </li>
+                       </ul>
+
+                       <strong>Nice-to-have skills:</strong>
+                       <ul>
+                       <li> List preferred skills (max 4 points) </li>
+                       <li> Use <strong> tags for technical skills </li>
+                       <li> Keep each point brief </li>
+                       </ul>
+
+                    Rules:
+                    - Exclude details about salary, location, company, benefits, or perks
+                    - Use HTML lists with <ul> and proper spacing
+                    - Maintain consistent formatting
+                    - Section 'Necessary skills' should start from a new line
+                    - Focus on technical and professional requirements
+                    - If input is primarily in English (>50 percent of words): Keep response in English
+                    - If input is primarily in Polish (>50 percent of words): Keep response in Polish
+                    - If input is neither Polish or English, translate to English
+
+                        Note: Language dominance is determined by word count. For example:
+                        - "Poszukujemy Senior Software Developer z minimum 5 lat doświadczenia w Java. Wymagana znajomość Spring Boot i REST API. Praca w zespole scrumowym."
+                        → Response in Polish (more Polish words)
+                        - "Senior Java Developer wanted. Szukamy do naszego zespołu."
+                        → Response in English (more English words)
+                    """
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            max_tokens=2000, 
+            temperature=0.7,
+        )
+        summary = completion.choices[0].message.content
+        return summary
+    except Exception as e:
+        print(f"Error summarizing text: {e}")
+        return "Summary could not be generated"
+
+==================================================
+
+File: jobs/tasks.py
+-------------------
+from django.core.management import call_command
+from celery import shared_task
+import time
+from django.core.cache import cache
+
+@shared_task
+def run_scrapers_task():
+    result = call_command("run_scrapers")
+    
+    ## Clear cache
+    time.sleep(300)
+    redis_client = cache.client.get_client()
+    cache_keys = redis_client.keys('*views.decorators.cache*')
+    
+    if cache_keys:
+        redis_client.delete(*cache_keys)
+            
+    return result
+    
+    
+        
+
+==================================================
+
+File: jobs/tests.py
+-------------------
+from django.test import TestCase
+from jobs.models import Job
+
+class JobTestCase(TestCase):
+    def setUp(self):
+        
+        self.job = Job.objects.create(
+            title="Software Engineer",
+            company="Google",
+            location="Warszawa",
+            operating_mode="Remote",
+            salary="80 000 - 100 000 PLN",
+            skills={"Python": "regular", "Django": "junior"},
+            description="This is a software engineering role.",
+            url="https://justjoin.it/job-posting",
+            summary="software engineering role."
+    )
+
+        # Assert that the job was created correctly
+    def test_job_creation(self):
+        self.assertEqual(self.job.title, "Software Engineer")
+        self.assertEqual(self.job.company, "Google")
+        self.assertEqual(self.job.location, "Warszawa")
+        self.assertEqual(self.job.operating_mode, "Remote")
+        self.assertEqual(self.job.salary, "80 000 - 100 000 PLN")
+        self.assertEqual(self.job.skills, {"Python": "regular", "Django": "junior"})
+        self.assertEqual(self.job.description, "This is a software engineering role.")
+        self.assertEqual(self.job.url,"https://justjoin.it/job-posting")
+        self.assertIsNotNone(self.job.scraped_date)
+        self.assertEqual(self.job.summary, "software engineering role.")
+
+
+from jobs.utils.salary_standardizer import standardize_salary
+
+class TestSalaryStandardizer(TestCase):
+    def test_hourly_salary_conversion(self):
+        """Test that hourly salaries are converted to monthly"""
+        test_cases = [
+            ("100 - 140 PLN", "16 800 - 23 520 PLN"),
+            ("90 - 120 PLN", "15 120 - 20 160 PLN"),
+        ]
+        
+        for input_salary, expected in test_cases:
+            with self.subTest(input_salary=input_salary):
+                result = standardize_salary(input_salary)
+                self.assertEqual(result, expected)
+    
+    def test_monthly_salary_standardization(self):
+        """Test that monthly salaries are properly standardized"""
+        test_cases = [
+            ("10 000 - 15 000 PLN", "10 000 - 15 000 PLN"),
+            ("10000  -  15000 PLN", "10 000 - 15 000 PLN"),
+            ("10000-15000 PLN", "10 000 - 15 000 PLN"),
+            
+        ]
+        
+        for input_salary, expected in test_cases:
+            with self.subTest(input_salary=input_salary):
+                result = standardize_salary(input_salary)
+                self.assertEqual(result, expected)
+    
+    def test_edge_cases(self):
+        """Test edge cases and invalid inputs"""
+        test_cases = [
+            ("", ""),  # Empty string
+            ("invalid salary", "invalid salary"),  # Invalid format
+            ("10 000 PLN", "10 000 PLN"),
+            ("12 000  PLN", "12 000 PLN"),
+            ("100,00 PLN", "100 PLN"),
+            ("10 000,00 - 12 000,00 PLN", "10 000 - 12 000 PLN")
+        ]
+        
+        for input_salary, expected in test_cases:
+            with self.subTest(input_salary=input_salary):
+                result = standardize_salary(input_salary)
+                self.assertEqual(result, expected)
+
+==================================================
+
+File: jobs/views.py
+-------------------
+from django.shortcuts import render
+
+# Create your views here.
+
+
+==================================================
+
+File: jobs/scrapers/base_scraper.py
+-----------------------------------
+from abc import ABC, abstractmethod
+import requests
+from bs4 import BeautifulSoup
+from jobs.models import Job, Requested
+import time
+import logging
+from typing import Dict, Optional
+from django.db import transaction
+from jobs.summarizer import summarize_text
+from random import randint
+from jobs.utils.salary_standardizer import standardize_salary
+from datetime import datetime, timedelta, timezone
+
+class WebScraper(ABC):
+    """Base scraper class for job websites."""
+    
+    def __init__(self, base_url: str, filter_urls: list[str], request_limit: int):
+        self.base_url = base_url
+        self.filter_urls = filter_urls
+        self.logger = logging.getLogger(f'scraper.{self.__class__.__name__}')
+        self.request_limit = request_limit
+        self.request_count = 0
+        self.updated_count = 0
+
+    # Main Flow Methods
+    # --------------------------------------------------
+    def run(self) -> int:
+        """Main entry point for the scraper."""
+        try:
+            html = self.get_main_html()
+            job_listings = self.get_job_listings(html)
+            jobs_data = self.process_job_listings(job_listings)
+            return self.save_jobs(jobs_data)
+        except Exception as e:
+            self.logger.error(f"Error in scraping process: {e}")
+            return 0
+
+    def get_main_html(self) -> list[str]:
+        """Fetches HTML from the main job listings page."""
+        pages = []
+        headers = {
+                'User-Agent': "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0"
+            }
+        for url in self.filter_urls:
+            self.logger.info(f"Fetching main page from: {url}")
+            res = requests.get(url, headers=headers)
+            res.raise_for_status()
+            pages.append(res.text)
+            self.logger.debug("Successfully fetched main page")
+        return pages
+
+    def get_job_listings(self, html_pages: list[str]) -> Dict[str, Dict[str, str]]:
+        """Extracts basic job information (title, link) from the main listings page."""
+        page_listings = []
+        for html in html_pages:
+            soup = BeautifulSoup(html, 'html.parser')
+            containers = soup.find_all(**self.get_jobs_container_selector())
+            
+            if not containers:
+                self.logger.warning("No job listings found on the page")
+                return {}
+            page_listing = self._extract_listings_from_containers(containers)
+            page_listings.append(page_listing)
+            
+        return page_listings
+
+    def _extract_listings_from_containers(self, containers) -> Dict[str, Dict[str, str]]:
+        """Processes each container to extract job listings."""
+        all_listings = {}
+        for container in containers:
+            try:
+                for listing in container.find_all(**self.get_listings_selector()):
+                    title_element = listing.find(**self.get_listing_title_selector())
+                    if title_element and (title := title_element.find(text=True, recursive=False)):
+                        link = self.extract_job_link(listing)
+                        all_listings[title.strip()] = {"link": link}
+            except Exception as e:
+                self.logger.error(f"Error processing container: {e}")
+        return all_listings
+
+    # Job Details Processing
+    # --------------------------------------------------
+    def process_job_listings(self, page_listings: list[Dict]) -> Dict:
+        """Processes each job listing to get detailed information."""
+        detailed_jobs = {}
+        for listings in page_listings:
+            self.logger.info(f"Starting to process {len(listings)} job listings")
+            
+            for title, data in listings.items():
+                self.logger.debug(f"Processing job: {title}")
+                if job_details := self._process_single_job(title, data["link"]):
+                    detailed_jobs[title] = job_details
+                    self.logger.debug(f"Successfully processed job: {title}")
+                
+        self.logger.info(f"Completed processing. Updated {self.updated_count}. Requested {(self.request_count)} jobs")
+        return detailed_jobs
+
+    def _process_single_job(self, title: str, link: str) -> Optional[Dict]:
+        """Processes a single job listing."""
+        try:
+            today = datetime.now(timezone.utc)
+            
+            base_link = link.split('?')[0]
+            
+            
+            if job := Job.objects.filter(url__startswith=base_link):
+                job = job.get()
+                self.logger.debug(f"Job already exists in database: {title} : scraped on: {job.scraped_date}")
+                two_weeks_later = job.scraped_date + timedelta(days=14)
+                if two_weeks_later < today:
+                    job.scraped_date = today
+                    job.save()
+                    self.updated_count +=1
+                    self.logger.info(f"Scraped over 14 days ago, updating date for: {title}")
+                    return None
+                    
+            if Requested.objects.filter(url__startswith=base_link).exists():
+                self.logger.debug(f"Request already exists in database: {title}")
+                return None
+                
+            
+            if soup := self._get_job_page(link, title):
+                experience = self.extract_experience_level(soup)
+                return {
+                    "company": self.extract_company(soup),
+                    "location": self.extract_location(soup),
+                    "operating_mode": self.extract_operating_mode(soup),
+                    "experience": experience,
+                    "salary": self.extract_salary(soup),
+                    "description": self.extract_description(soup),
+                    "skills": self.process_skills(soup, experience),
+                    "link": link
+                }
+        except Exception as e:
+            self.logger.error(f"Error processing job {title}: {e}")
+        return None
+
+    def _get_job_page(self, link: str, title: str) -> Optional[BeautifulSoup]:
+        """Fetches and parses individual job posting page with request limit."""
+        if self.request_count >= self.request_limit:
+            return None
+        
+        try:
+            headers = {'User-Agent': "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0"}
+            
+            if 'justjoin' in link:
+                headers = {'User-Agent': "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0",
+                           'cookie': 'userCurrency=pln'}
+            response = requests.get(link, headers=headers)
+            self.request_count += 1
+            time.sleep(randint(1, 5))
+            
+            Requested.objects.create(url=link, title=title)
+            self.logger.info(f"Requested: {title}")
+            
+            return BeautifulSoup(response.text, "html.parser")
+        except requests.RequestException as e:
+            self.logger.error(f"Failed to request {title}: {e}")
+            return None
+
+    # Skills Processing
+    # --------------------------------------------------
+    def process_skills(self, soup: BeautifulSoup, experience: str) -> Dict[str, str]:
+        """Main method for processing skills based on job type."""
+        if self.has_skill_sections():
+            self.logger.debug("Using sectioned skills processing")
+            return self._process_sectioned_skills(soup, experience)
+        self.logger.debug("Using single container skills processing")
+        return self._process_single_container_skills(soup)
+
+    def _process_sectioned_skills(self, soup: BeautifulSoup, experience: str) -> Dict[str, str]:
+        """Processes skills that are divided into required and nice-to-have sections."""
+        skills = {}
+        if container := soup.find(**self.get_skills_container_selector()):
+            self._extract_required_skills(container, skills, experience)
+            self._extract_nice_to_have_skills(container, skills)
+        return skills
+
+    def _extract_required_skills(self, container: BeautifulSoup, skills: Dict[str, str], experience: str):
+        """Extracts required skills with experience-based levels."""
+        if required := container.find(**self.get_required_skills_selector()):
+            self.logger.debug("Found required skills section")
+            try:
+                for skill in required.find_all(**self.get_skill_item_selector()):
+                    if skill_name := skill.find("span"):
+                        skills[skill_name.text.strip()] = self.get_standardized_skill_level(experience)
+            except Exception as e:
+                self.logger.error(f"Error processing required skills: {e}")
+
+    def _extract_nice_to_have_skills(self, container: BeautifulSoup, skills: Dict[str, str]):
+        """Extracts nice-to-have skills."""
+        if nice := container.find(**self.get_nice_skills_selector()):
+            self.logger.debug("Found nice skills section")
+            try:
+                for skill in nice.find_all(**self.get_skill_item_selector()):
+                    if skill_name := skill.find("span"):
+                        skills[skill_name.text.strip()] = "nice to have"
+            except Exception as e:
+                self.logger.error(f"Error processing nice-to-have skills: {e}")
+
+    def _process_single_container_skills(self, soup: BeautifulSoup) -> Dict[str, str]:
+        """Processes skills from a single container (no sections)."""
+        skills = {}
+        if container := soup.find(**self.get_skills_container_selector()):
+            self.logger.debug("Found single container skills")
+            for element in container.find_all(**self.get_skill_item_selector()):
+                if (name := self.extract_skill_name(element)) and (level := self.extract_skill_level(element)):
+                    skills[name] = level
+        return skills
+
+    def get_standardized_skill_level(self, experience: str) -> str:
+        """Standardizes skill levels based on experience."""
+        experience = experience.lower()
+        if not experience:
+            return 'regular'
+        
+        if any(level in experience for level in ['senior', 'lead', 'expert', 'principal']):
+            return 'senior'
+        elif any(level in experience for level in ['mid', 'regular', 'intermediate']):
+            return 'regular'
+        elif any(level in experience for level in ['junior', 'intern', 'trainee', 'entry']):
+            return 'junior'
+        return 'regular'
+
+    # Database Operations
+    # --------------------------------------------------
+    @transaction.atomic
+    def save_jobs(self, jobs_data: Dict) -> int:
+        """Saves processed jobs to the database."""
+        saved_count = 0
+        for title, data in jobs_data.items():
+            try:
+                description = data.get("description", "")
+                summary = summarize_text(description) if description else ""
+ 
+                
+                if not self._is_duplicate_job(title, data):
+                    url = data.get("link")
+                    if 'pracuj.pl' in url:
+                        source = "Pracuj.pl"
+                    elif 'nofluffjobs.com' in url:
+                        source = "NoFluffJobs"
+                    elif 'justjoin.it' in url:
+                        source = "JustJoinIt"
+                    elif 'theprotocol.it' in url:
+                        source = "TheProtocol"
+                    
+                    # Standardize salary before saving
+                    raw_salary = data.get("salary")
+                    standardized_salary = standardize_salary(raw_salary) if raw_salary else None
+                    
+                    Job.objects.create(
+                        title=title,
+                        company=data.get("company"),
+                        location=data.get("location"),
+                        operating_mode=data.get("operating_mode"),
+                        experience=data.get("experience"),
+                        salary=standardized_salary,
+                        description=description,
+                        skills=data.get("skills"),
+                        summary=summary,
+                        url=url,
+                        source=source
+                    )
+                    saved_count += 1
+                    self.logger.info(f"Created job: {title}")
+                else:
+                    self.logger.info(f"Skipping {title} already exists in database")
+            except Exception as e:
+                self.logger.error(f"Error saving job {title}: {e}")
+        return saved_count
+
+    def _is_duplicate_job(self, title: str, data: Dict) -> bool:
+        """Checks if a job already exists in the database."""
+        
+        # Check for duplicate URL
+        if Job.objects.filter(url=data.get("link")).exists():
+            self.logger.debug(f"Duplicate found by URL: {data.get('link')}")
+            return True
+        
+        # Check for exact company and title match
+        company = data.get("company")
+        if Job.objects.filter(company=company, title=title).exists():
+            self.logger.debug(f"Duplicate found by company/title match: {company} - {title}")
+            return True
+            
+        return False
+
+
+
+    # Abstract Methods That Need Implementation
+    # -----------------------------------------------
+    @abstractmethod
+    def get_jobs_container_selector(self) -> Dict[str, Dict[str, str]]:
+        """
+        Define how to find the main container that holds all job listings.
+        Returns:
+        {
+            'name': 'div',
+            'attrs': {'class': 'jobs-container'}  # Example
+        }
+        """
+        pass
+
+    @abstractmethod
+    def get_listings_selector(self) -> Dict[str, Dict[str, str]]:
+        """ Define how to find individual job listings within the container. """ 
+        pass
+
+    @abstractmethod
+    def get_listing_title_selector(self) -> Dict[str, Dict[str, str]]:
+        """ Define how to find the title element within a job listing. """
+        pass
+
+    @abstractmethod
+    def extract_job_link(self, job_listing: BeautifulSoup) -> str:
+        """
+        Extract job URL from the listing element.
+        Args:
+            job_listing: BeautifulSoup element containing the job listing
+        Returns:
+            Complete URL string (e.g., "https://example.com/jobs/123")
+        """
+        pass
+
+    @abstractmethod
+    def extract_company(self, soup: BeautifulSoup) -> str:
+        """Extract company name from job details page."""
+        pass
+
+    @abstractmethod
+    def extract_location(self, soup: BeautifulSoup) -> str:
+        """Extract job location from job details page."""
+        pass
+
+    @abstractmethod
+    def extract_operating_mode(self, soup: BeautifulSoup) -> str:
+        """Extract job's operating mode from job details page."""
+        pass
+
+    @abstractmethod
+    def extract_experience_level(self, soup: BeautifulSoup) -> str:
+        """Extract job's experience from job details page."""
+        
+    
+    @abstractmethod
+    def extract_salary(self, soup: BeautifulSoup) -> str:
+        """Extract salary information from job details page."""
+        pass
+
+    @abstractmethod
+    def extract_description(self, soup: BeautifulSoup) -> str:
+        """Extract job description from job details page."""
+        pass
+
+    @abstractmethod
+    def get_skills_container_selector(self) -> Dict[str, Dict[str, str]]:
+        """
+        Define how to find the container that holds all skills.
+        Returns:
+        {
+            'name': 'div',
+            'attrs': {'id': 'skills-section'}  # Example
+        }
+        """
+        pass
+
+    @abstractmethod
+    def has_skill_sections(self) -> bool:
+        """
+        Indicate if the website separates skills into required/nice-to-have sections.
+        Returns:
+            True if site has separate sections (like NoFluffJobs)
+            False if site has single skills list (like JustJoinIT)
+        """
+        pass
+    @abstractmethod
+    def get_required_skills_selector(self) -> Dict[str, Dict[str, str]]:
+        """
+        Define how to find the required skills section.
+        Only needed if has_skill_sections() returns True.
+        """
+        pass
+    @abstractmethod
+    def get_nice_skills_selector(self) -> Dict[str, Dict[str, str]]:
+        """
+        Define how to find the nice-to-have skills section.
+        Only needed if has_skill_sections() returns True.
+        """
+        pass
+
+    @abstractmethod
+    def get_skill_item_selector(self) -> Dict[str, Dict[str, str]]:
+        """Define how to find individual skill items within skills container."""
+        pass
+
+    @abstractmethod
+    def extract_skill_name(self, element: BeautifulSoup) -> str:
+        """
+        Extract skill name from a skill element.
+        Only needed if has_skill_sections() returns False.
+        Args:
+            element: BeautifulSoup element containing a single skill
+        Returns:
+            Skill name as string (e.g., "Python", "Docker")
+        """
+        pass
+
+    @abstractmethod
+    def extract_skill_level(self, element: BeautifulSoup) -> str:
+        """
+        Extract skill level from a skill element.
+        Only needed if has_skill_sections() returns False.
+        Args:
+            element: BeautifulSoup element containing a single skill
+        Returns:
+            Skill level as string (e.g., "junior", "regular", "senior")
+        """
+        pass
+
+==================================================
+
+File: jobs/scrapers/justjoin_scraper.py
+---------------------------------------
+from typing import Any, Dict
+from bs4 import BeautifulSoup
+
+from .base_scraper import WebScraper
+
+
+class JustJoinScraper(WebScraper):
+    
+    def __init__(self, request_limit: int):
+        super().__init__(
+            base_url="https://justjoin.it",
+            filter_urls=["https://justjoin.it/job-offers/all-locations/python?targetCurrency=pln&orderBy=DESC&sortBy=newest",
+                         "https://justjoin.it/job-offers/all-locations/javascript?targetCurrency=pln&orderBy=DESC&sortBy=newest"],
+            request_limit=request_limit
+        )
+
+    
+    def get_jobs_container_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'div',
+            'attrs': {'id': 'up-offers-list'}
+        }
+        
+
+    def get_listings_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'li',
+            'attrs': {'data-index': True}
+        }
+
+    def get_listing_title_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'h3',
+            'attrs': {}
+        }
+
+    def extract_job_link(self, job_listing: BeautifulSoup) -> str:
+        return f"{self.base_url}{job_listing.a['href']}?targetCurrency=pln"
+    
+    def extract_company(self, soup: BeautifulSoup) -> str:
+        div_elements = soup.find("div", {"class": "MuiBox-root css-yd5zxy"})
+        return div_elements.h2.text.strip() if div_elements else ""
+
+    def extract_location(self, soup: BeautifulSoup) -> str:
+        div_elements = soup.find("div", {"class": "MuiBox-root css-yd5zxy"})
+        location_span = div_elements.find("span", {"class": "css-1o4wo1x"})
+        return location_span.text.strip() if location_span else ""
+
+    def extract_operating_mode(self, soup: BeautifulSoup) -> str:
+        mode_divs = soup.find_all("div", {"class": "MuiBox-root css-pretdm"})
+        texts = mode_divs[3].find_all("div")
+        operating_mode = texts[-1].text.strip()
+
+        return operating_mode if operating_mode else ""
+    
+    def extract_experience_level(self, soup: BeautifulSoup) -> str:
+        mode_divs = soup.find_all("div", {"class": "MuiBox-root css-pretdm"})
+        texts = mode_divs[1].find_all("div")
+        experience = texts[-1].text.strip()
+        if "C-level" in experience:
+            return "Expert"
+
+        return experience if experience else ""
+    
+    def extract_salary(self, soup: BeautifulSoup) -> str:
+        salary_elements = soup.findChildren("span", {"class": "css-1pavfqb"})
+        return salary_elements[0].text.strip() if salary_elements else ""
+
+    def extract_description(self, soup: BeautifulSoup) -> str:
+        target_div = soup.find("div", {"class": "MuiBox-root css-tbycqp"})
+        return target_div.get_text(separator='\n', strip=True) if target_div else ""
+
+    def get_skills_container_selector(self) -> Dict:
+        return {
+            'name': 'div',
+            'attrs': {'class': 'MuiStack-root css-6r2fzw'}
+        }
+
+    def has_skill_sections(self) -> bool:
+        return False
+
+
+    def get_skill_item_selector(self) -> Dict:
+        return {
+            'name': 'div',
+            'attrs': {'class': 'MuiBox-root css-jfr3nf'}
+        }
+    
+    def extract_skill_name(self, element: BeautifulSoup) -> str:
+        return element.h4.text.strip()
+
+    def extract_skill_level(self, element: BeautifulSoup) -> str:
+        return element.span.text.strip()
+
+
+    def get_required_skills_selector(self) -> Dict:
+        pass
+
+    def get_nice_skills_selector(self) -> Dict:
+        pass
+
+
+    
+    
+
+
+==================================================
+
+File: jobs/scrapers/nofluffjobs.py
+----------------------------------
+from typing import Any, Dict
+from bs4 import BeautifulSoup
+from .base_scraper import WebScraper
+
+class NoFluffScraper(WebScraper):
+    def __init__(self, request_limit: int):
+        super().__init__(
+            base_url= "https://nofluffjobs.com",
+            filter_urls=["https://nofluffjobs.com/pl/Python?sort=newest", "https://nofluffjobs.com/pl/JavaScript?sort=newest"],
+            request_limit=request_limit
+        )
+
+    def get_jobs_container_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'div',
+            'attrs': {'class': 'list-container'}
+        }
+
+    def get_listings_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'a',
+            'attrs': {'class': 'posting-list-item'}
+        }
+
+    def get_listing_title_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'h3',
+            'attrs': {'data-cy': 'title position on the job offer listing'}
+        }
+
+    def extract_job_link(self, job_listing: BeautifulSoup) -> str:
+        return f"{self.base_url}{job_listing['href']}"
+
+    def extract_company(self, soup: BeautifulSoup) -> str:
+        element = soup.find('p', {'class': 'd-flex align-items-center mb-0'})
+        if not element:
+            element = soup.find('a', {'id': 'postingCompanyUrl'})
+        return element.text.strip()
+
+    def extract_location(self, soup: BeautifulSoup) -> str:
+        try:
+            span = soup.find('span', {'data-cy': 'location_mobile_pin'})
+            if not span:
+                span = soup.find('span', {'data-cy': 'location_pin'})
+            
+            if span:
+                text = span.get_text(strip=True)
+                text = text.split('+')[0].strip()
+            else: 
+                return ""
+            
+            if "Hybrydowo" in text or "Praca zdalna" in text:
+                return ""
+            return text
+        except Exception as e:
+            self.logger.error(f"Error extracting location: {e}")
+
+    def extract_operating_mode(self, soup: BeautifulSoup) -> str:
+        try:       
+            span = soup.find('div', {'data-cy': 'location_remote'})
+            if not span:
+                span = soup.find('div', {'data-cy': 'location_mobile_remote'})
+                if not span:
+                    span = soup.find('span', {'data-cy': 'location_mobile_pin'})
+                    if not span:
+                        span = soup.find('span', {'data-cy': 'location_pin'})
+            
+            text = span.get_text(strip=True)
+            
+            if 'Praca zdalna' in text:
+                return 'Remote'
+            elif 'Hybrydowo' in text:
+                return 'Hybrid'
+            else:
+                return "Office"
+        except Exception as e:
+            self.logger.error(f"Error extracting operating mode: {e}")
+
+        
+    def extract_experience_level(self, soup: BeautifulSoup) -> str:
+        span = soup.select_one('#posting-seniority span')
+        return span.get_text(strip=True) if span else ""
+
+    def extract_salary(self, soup: BeautifulSoup) -> str:
+        h4 = soup.select_one('div.salary > h4.tw-mb-0')
+        if h4:
+            return h4.text.strip().replace('–', '-')
+        else:
+            return ""
+
+    def extract_description(self, soup: BeautifulSoup) -> str:
+        section_data = ['JobOffer_Requirements', 'JobOffer_Project', 'JobOffer_DailyTasks']
+        description_parts = []
+        
+        for section_id in section_data:
+            section = soup.find('section', {'data-cy-section': section_id})
+            if section:
+                description_parts.append(section.get_text(separator='\n', strip=True))
+        
+        return '\n\n'.join(description_parts)
+
+    def get_skills_container_selector(self) -> Dict:
+        return {
+            'name': 'div',
+            'attrs': {'id': 'posting-requirements'}
+        }
+
+    def has_skill_sections(self) -> bool:
+        return True
+
+    def get_required_skills_selector(self) -> Dict:
+        return {
+            'name': 'section',
+            'attrs': {'branch': 'musts'}
+        }
+        
+    def get_nice_skills_selector(self) -> Dict:
+        return {
+            'name': 'section',
+            'attrs': {'id': 'posting-nice-to-have'}
+        }
+    
+    def get_skill_item_selector(self) -> Dict:
+        return {
+            'name': 'li',
+            'attrs': {}
+        }
+
+    def extract_skill_name(self, element: BeautifulSoup) -> str:
+        pass
+
+    def extract_skill_level(self, element: BeautifulSoup) -> str:
+        pass
+
+
+==================================================
+
+File: jobs/scrapers/pracuj_scraper.py
+-------------------------------------
+from typing import Any, Dict
+from bs4 import BeautifulSoup
+from .base_scraper import WebScraper
+
+class PracujScraper(WebScraper):
+    def __init__(self, request_limit: int):
+        super().__init__(
+            base_url="https://it.pracuj.pl/praca",
+            filter_urls=["https://it.pracuj.pl/praca?et=1%2C3%2C17%2C4%2C18%2C19%2C5%2C20&itth=37", "https://it.pracuj.pl/praca?et=1%2C3%2C17%2C4%2C18%2C19%2C5%2C20&itth=33"],
+            request_limit=request_limit
+        )
+        
+    def get_jobs_container_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'section-offers'}
+        }
+
+    def get_listings_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'default-offer', 'data-test-location': 'single'}
+        }
+
+    def get_listing_title_selector(self) -> Dict[str, Any]:
+        return {
+            'name': 'a',
+            'attrs': {'class': 'tiles_o1859gd9'}
+        }
+
+    def extract_job_link(self, job_listing: BeautifulSoup) -> str:
+            link = job_listing.find('a', {'data-test': 'link-offer'})
+            return link['href'] 
+        
+
+    def extract_company(self, soup: BeautifulSoup) -> str:
+        company= soup.find('h2', {'data-test': 'text-employerName'})
+        if company:
+            try:
+                text = company.contents[0].strip()
+                return text
+            except Exception as e:
+                self.logger.error(f"Error extracting company: {e}")
+        
+
+    def extract_location(self, soup: BeautifulSoup) -> str:
+        li = soup.find('li', {'data-test': 'sections-benefit-workplaces'})
+        div = li.find('div', {'data-test': 'offer-badge-description'})
+        if div:
+            try:
+                text = div.get_text(strip=True)
+                return text.split(',')[0].strip() if text else ""
+            except Exception as e:
+                self.logger.error(f"Error extracting location: {e}")
+
+        
+
+    def extract_operating_mode(self, soup: BeautifulSoup) -> str:
+        li = soup.find('li', {'data-scroll-id': 'work-modes'})
+        div = li.find('div', {'data-test': 'offer-badge-title'})
+        if div:
+            try:
+                text = div.get_text(strip=True)
+                if 'praca stacjonarna' in text or 'full office' in text:
+                    return 'Office'
+                elif 'praca zdalna' in text or 'home office' in text:
+                    return 'Remote'
+                elif 'praca hybrydowa' in text or 'hybrid' in text:
+                    return 'Hybrid'
+                else:
+                    return ""
+            except Exception as e:
+                self.logger.error(f"Error extracting operating mode: {e}")
+
+    def extract_experience_level(self, soup: BeautifulSoup) -> str:
+        li = soup.find('li', {'data-scroll-id': 'position-levels'})
+        div = li.find('div', {'data-test': 'offer-badge-title'})
+        if div:
+            try:
+                text = div.get_text(strip=True)
+                if 'praktykant' in text or 'trainee' in text:
+                    return 'Trainee'
+                elif 'Junior' in text:
+                    return 'Junior'
+                elif 'Mid' in text:
+                    return 'Mid'
+                elif 'Senior' in text:
+                    return 'Senior'
+                else:
+                    return 'Expert'
+            except Exception as e:
+                self.logger.error(f"Error extracting experience level: {e}")
+
+    def extract_salary(self, soup: BeautifulSoup) -> str:
+        div = soup.find('div', {'data-test': 'text-earningAmount'})
+        if div:
+            try:
+                text = div.text.strip().replace(",00", '').split("zł")[0]
+                formated = text.split("–")
+                return f"{formated[0]} - {formated[1]} PLN" if formated else ""
+            except Exception as e:
+                self.logger.error(f"Error extracting salary: {e}")
+                return f"{formated[0]} PLN" if formated else ""
+
+    def extract_description(self, soup: BeautifulSoup) -> str:
+        try:
+            section = soup.find('section', {'data-test': 'section-about-project'})
+            if section:
+                data = section.find_all('li', {'class': 't6laip8'})
+                text_elements = [li.get_text(strip=True) for li in data]
+            else:
+                text_elements = ""
+                
+            li_elements = soup.find_all('li', {'class':'tkzmjn3'})
+            li_texts = [li.get_text(strip=True) for li in li_elements]
+            return '\n'.join(text_elements) + '\n' + '\n'.join(li_texts)
+        except Exception as e:
+            self.logger.error(f"Error extracting description: {e}")
+        
+
+    def get_skills_container_selector(self) -> Dict:
+        return {
+            'name': 'section',
+            'attrs': {'data-test': 'section-technologies'}
+        }
+
+    def has_skill_sections(self) -> bool:
+        return True
+
+    def get_required_skills_selector(self) -> Dict:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'section-technologies-expected'}
+        }
+        
+    def get_nice_skills_selector(self) -> Dict:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'section-technologies-optional'}
+        }
+
+    def get_skill_item_selector(self) -> Dict:
+        return {
+            'name': 'li',
+            'attrs': {'class': 'catru5k'}
+        }
+
+    def extract_skill_name(self, element: BeautifulSoup) -> str:
+        pass
+
+    def extract_skill_level(self, element: BeautifulSoup) -> str:
+        pass
+
+
+==================================================
+
+File: jobs/scrapers/protocol_scraper.py
+---------------------------------------
+from typing import Any, Dict
+from bs4 import BeautifulSoup
+from .base_scraper import WebScraper
+import re
+import inspect
+
+
+class TheProtocolScraper(WebScraper):
+    def __init__(self, request_limit: int):
+        super().__init__(
+            base_url= "https://theprotocol.it",
+            filter_urls=["https://theprotocol.it/filtry/javascript;t?sort=date", "https://theprotocol.it/filtry/python;t?sort=date"],
+            request_limit=request_limit
+        )
+
+    def get_jobs_container_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'offersList'}
+        }
+
+    def get_listings_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'a',
+            'attrs': {'data-test': 'list-item-offer'}
+        }
+
+    def get_listing_title_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'h2',
+            'attrs': {'id': 'offer-title'}
+        }
+
+    def extract_job_link(self, job_listing: BeautifulSoup) -> str:
+        return f"{self.base_url}{job_listing['href']}"
+
+    def extract_company(self, soup: BeautifulSoup) -> str:
+        element = soup.find('h2', {'data-test': 'text-offerEmployer'})
+        return element.text.strip()
+
+    def extract_location(self, soup: BeautifulSoup) -> str:
+        element = soup.find_all('div', {'data-test': 'text-workplaceAddress'})
+        return element[0].text.strip() if element else ""
+        
+
+    def extract_operating_mode(self, soup: BeautifulSoup) -> str:
+        container = soup.find('div', {'data-test': 'section-workModes'})
+        element = container.find('div', {'class': 'r4179ok bldcnq5 ihmj1ec'})
+        operating_mode = element.text.strip()
+        
+        if 'praca zdalna' in operating_mode or 'remote work' in operating_mode:
+                return 'Remote'
+        elif 'praca hybrydowa' in operating_mode or 'hybrid work' in operating_mode:
+            return 'Hybrid'
+        elif 'praca stacjonarna' in operating_mode or 'full office work' in operating_mode:
+            return 'Office'
+
+    def extract_experience_level(self, soup: BeautifulSoup) -> str:
+        container = soup.find('div', {'data-test': 'section-positionLevels'})
+        element = container.find('div', {'class': 'r4179ok bldcnq5 ihmj1ec'})
+        experience = element.text.strip()
+        
+        if 'trainee' in experience or 'assistant' in experience:
+            return 'Trainee'
+        elif 'junior' in experience:
+            return 'Junior'
+        elif 'mid' in experience:
+            return 'Mid'
+        elif 'senior' in experience:
+            return 'Senior'
+        else:
+            return 'Expert'
+ 
+
+    def extract_salary(self, soup: BeautifulSoup) -> str:
+        element = soup.find('p', {'data-test': 'text-contractSalary'})
+        if element:
+            stripped = element.text.strip().split('zł')[0]
+            formated = stripped.replace('–', '-').split('-')
+            return f"{formated[0]} - {formated[1]}PLN"
+        else:
+            return ""
+        
+
+    def extract_description(self, soup: BeautifulSoup) -> str:
+        sections_ids = ['TECHNOLOGY_AND_POSITION', 'ABOUT_US']
+        description_parts = []
+        for section_id in sections_ids:
+            section = soup.find('div', {'id': section_id})
+            if section:
+                description_parts.append(section.get_text(separator='\n', strip=True))
+        return '\n\n'.join(description_parts)
+
+    def get_skills_container_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'section-technologies'}
+        }
+
+    def has_skill_sections(self) -> bool:
+        return True
+
+    def get_required_skills_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'div',
+            'attrs': {'class': 'c1fj2x2p'}
+        }
+
+    def get_nice_skills_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'div',
+            'attrs': {'class': 'c1fj2x2p'}
+        }
+
+    def get_skill_item_selector(self) -> Dict[str, Dict[str, str]]:
+        return {
+            'name': 'div',
+            'attrs': {'data-test': 'chip-technology'}
+        }
+
+    def _process_sectioned_skills(self, soup: BeautifulSoup, experience: str) -> Dict[str, str]:
+        """Override the parent method to handle Protocol.it's specific structure"""
+        skills = {}
+        if container := soup.find(**self.get_skills_container_selector()):
+            # Find all sections with skills
+            sections = container.find_all('div', {'class': 'c1fj2x2p'})
+            
+            for section in sections:
+                # Check if this is required or optional section
+                header = section.find('h3')
+                if not header:
+                    continue
+                
+                header_text = header.text.strip().lower()
+                is_required = 'expected' in header_text or 'wymagane' in header_text
+                is_optional = 'optional' in header_text or 'mile widziane' in header_text
+                
+                # Process skills in this section
+                for skill in section.find_all(**self.get_skill_item_selector()):
+                    if skill_span := skill.find('span', {'class': 'l1sjc53z'}):
+                        skill_name = skill_span.text.strip()
+                        if is_required:
+                            skills[skill_name] = self.get_standardized_skill_level(experience)
+                        elif is_optional:
+                            skills[skill_name] = 'nice to have'
+                        else:
+                            continue
+        
+        return skills
+
+    def extract_skill_name(self, element: BeautifulSoup) -> str:
+        pass
+
+    def extract_skill_level(self, element: BeautifulSoup) -> str:
+        pass
+
+    
+  
+
+==================================================
+
+File: jobs/management/__init__.py
+---------------------------------
+
+
+==================================================
+
+File: jobs/management/commands/__init__.py
+------------------------------------------
+
+
+==================================================
+
+File: jobs/management/commands/cleanup_salaries.py
+--------------------------------------------------
+from django.core.management.base import BaseCommand
+from jobs.models import Job
+from django.db import transaction
+
+class Command(BaseCommand):
+    help = 'One-time cleanup of salary formats in the database. Convert EUR to PLN and remove decimal values (100,00 > 100)'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dry_run',
+            action='store_true',
+            help='Run without making actual changes'
+        )
+
+    def handle(self, *args, **options):
+        dry_run = options['dry_run']
+        
+        if dry_run:
+            self.stdout.write('Running in dry-run mode - no changes will be made')
+            
+        # Get all jobs with salaries
+        jobs = Job.objects.exclude(salary__isnull=True).exclude(salary='')
+        total_jobs = jobs.count()
+        
+        self.stdout.write(f'Found {total_jobs} jobs with salary information')
+        
+        updated_count = 0
+        eur_converted = 0
+        decimal_cleaned = 0
+        
+        try:
+            with transaction.atomic():
+                for job in jobs:
+                    original_salary = job.salary
+                    updated_salary = original_salary
+                    
+                    # 1. Handle EUR conversion
+                    if 'EUR' in updated_salary:
+                        parts = updated_salary.replace('EUR', '').strip().split('-')
+                        min_val = float(parts[0].strip().replace(' ', ''))
+                        max_val = float(parts[1].strip().replace(' ', ''))
+                        
+                        # Convert to PLN
+                        min_val = int(min_val * 4.30)
+                        max_val = int(max_val * 4.30)
+                        
+                        # Format with spaces for thousands
+                        updated_salary = f"{min_val:,} - {max_val:,} PLN".replace(',', ' ')
+                        eur_converted += 1
+                    
+                    # 2. Remove decimal parts
+                    if ',' in updated_salary:
+                        parts = updated_salary.split('-')
+                        min_val = parts[0].split(',')[0].strip()
+                        max_val = parts[1].split(',')[0].strip()
+                        updated_salary = f"{min_val} - {max_val} PLN"
+                        decimal_cleaned += 1
+                    
+                    if updated_salary != original_salary:
+                        if not dry_run:
+                            job.salary = updated_salary
+                            job.save()
+                        updated_count += 1
+                        self.stdout.write(
+                            f'Updated: "{original_salary}" -> "{updated_salary}"'
+                        )
+                
+                if dry_run:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            '\nDry run completed. No changes were made.'
+                        )
+                    )
+                    raise transaction.TransactionManagementError("Dry run - rolling back changes")
+                    
+        except transaction.TransactionManagementError as e:
+            if "Dry run" not in str(e):
+                self.stdout.write(
+                    self.style.ERROR(
+                        'Error occurred. All changes have been rolled back.'
+                    )
+                )
+                raise
+                
+        # Print summary
+        self.stdout.write(self.style.SUCCESS(
+            f'\nSummary:\n'
+            f'Total jobs processed: {total_jobs}\n'
+            f'Jobs updated: {updated_count}\n'
+            f'EUR conversions: {eur_converted}\n'
+            f'Decimal parts removed: {decimal_cleaned}'
+        ))
+
+==================================================
+
+File: jobs/management/commands/remove_duplicates.py
+---------------------------------------------------
+from django.core.management.base import BaseCommand
+from django.db.models import Count
+from jobs.models import Job
+
+class Command(BaseCommand):
+    help = 'Find and remove duplicate job entries, keeping the earliest instance'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dry_run',
+            action='store_true',
+            help='Show what would be deleted without actually deleting'
+        )
+
+    def handle(self, *args, **options):
+        # Find groups of duplicates
+        duplicates = Job.objects.values('title', 'company').\
+                    annotate(count=Count('id')).\
+                    filter(count__gt=1)
+
+        total_duplicates = 0
+        
+        for dup in duplicates:
+            # Get all jobs matching this title and company
+            matching_jobs = Job.objects.filter(
+                title=dup['title'],
+                company=dup['company']
+            ).order_by('scraped_date')  # Order by date to keep earliest
+            
+            # First one is the one we'll keep
+            original = matching_jobs.first()
+            duplicates_to_remove = matching_jobs.exclude(id=original.id)
+            
+            self.stdout.write(
+                f"\nFound duplicates for: {dup['title']} at {dup['company']}"
+                f"\nKeeping: ID {original.id} (scraped: {original.scraped_date})"
+            )
+            
+            for job in duplicates_to_remove:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Will delete: ID {job.id} (scraped: {job.scraped_date})"
+                    )
+                )
+                total_duplicates += 1
+                
+                if not options['dry_run']:
+                    job.delete()
+
+        if total_duplicates == 0:
+            self.stdout.write(self.style.SUCCESS('\nNo duplicates found!'))
+        else:
+            action = 'Would delete' if options['dry_run'] else 'Deleted'
+            self.stdout.write(self.style.SUCCESS(
+                f'\n{action} {total_duplicates} duplicate entries.'
+            ))
+
+==================================================
+
+File: jobs/management/commands/run_scrapers.py
+----------------------------------------------
+from django.core.management.base import BaseCommand
+from jobs.scrapers.justjoin_scraper import JustJoinScraper
+from jobs.scrapers.nofluffjobs import NoFluffScraper
+from jobs.scrapers.pracuj_scraper import PracujScraper
+from jobs.scrapers.protocol_scraper import TheProtocolScraper
+import logging
+
+class Command(BaseCommand):
+    help = 'Run all job scrapers'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--scrapers',
+            nargs='+',
+            type=str,
+            default=['all'],
+            help='Specify which scrapers to run (jjit, nofluff, or all)'
+        )
+        parser.add_argument(
+            '--limit',
+            type=int,
+            default=200,
+            help='Limit number of requests per scraper'
+        )
+
+    
+
+    def handle(self, *args, **options):
+        logger = logging.getLogger('scraper')
+        scrapers_to_run = options['scrapers']
+        request_limit = options['limit']
+        
+        available_scrapers = {
+            'jjit': JustJoinScraper,
+            'nofluff': NoFluffScraper,
+            'pracuj': PracujScraper,
+            'protocol': TheProtocolScraper
+        }
+
+        if 'all' in scrapers_to_run:
+            scrapers_to_run = available_scrapers.keys()
+
+        total_jobs_created = 0
+        
+        for scraper_name in scrapers_to_run:
+            if scraper_name not in available_scrapers:
+                logger.error(f"Unknown scraper: {scraper_name}")
+                continue
+
+            logger.info(f"Starting {scraper_name} scraper...")
+            scraper = available_scrapers[scraper_name](request_limit=request_limit)
+            
+            try:
+                jobs_created = scraper.run()
+                if jobs_created is not None:
+                    total_jobs_created += jobs_created
+                    logger.info(f"{scraper_name} scraper finished. Created {jobs_created} new jobs")
+                else:
+                    logger.error(f"{scraper_name} scraper failed to return number of created jobs")
+            except Exception as e:
+                logger.error(f"Error running {scraper_name} scraper: {str(e)}", exc_info=True)
+
+        logger.info(f"Scraping completed. Total new jobs created: {total_jobs_created}")
+        return str(total_jobs_created)
+
+==================================================
+
+File: jobs/management/commands/test_salary_standardization.py
+-------------------------------------------------------------
+from django.core.management.base import BaseCommand
+from jobs.models import Job
+from jobs.utils.salary_standardizer import standardize_salary
+
+class Command(BaseCommand):
+    help = 'Test salary standardization on existing database entries'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--apply',
+            action='store_true',
+            help='Actually apply the changes instead of just showing them'
+        )
+        parser.add_argument(
+            '--limit',
+            type=int,
+            help='Limit the number of records to process'
+        )
+
+    def handle(self, *args, **options):
+        jobs = Job.objects.exclude(salary__isnull=True).exclude(salary='')
+        
+        if options['limit']:
+            jobs = jobs[:options['limit']]
+            
+        total = jobs.count()
+        changes = 0
+        
+        self.stdout.write(f"Processing {total} jobs with salary information")
+        self.stdout.write("-" * 50)
+
+        for job in jobs:
+            old_salary = job.salary.replace('\xa0', ' ')
+            new_salary = standardize_salary(old_salary)
+            
+            if old_salary != new_salary:
+                changes += 1
+                self.stdout.write(
+                    f"Job ID: {job.id}\n"
+                    f"Title: {job.title}\n"
+                    f"Old salary: {old_salary}\n"
+                    f"New salary: {new_salary}\n"
+                    f"{'-' * 30}"
+                )
+                
+                if options['apply']:
+                    job.salary = new_salary
+                    job.save()
+        
+        if options['apply']:
+            action = "Updated"
+        else:
+            action = "Would update"
+            
+        self.stdout.write(self.style.SUCCESS(
+            f"\nSummary:\n"
+            f"Total jobs processed: {total}\n"
+            f"{action} {changes} salaries"
+        ))
+
+==================================================
+
+File: jobs/management/commands/update_job_source.py
+---------------------------------------------------
+from django.core.management.base import BaseCommand, CommandParser
+from jobs.models import Job
+
+class Command(BaseCommand):
+    help = "Update source field in Job model"
+    
+    
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument(
+            '--dry_run',
+            action='store_true',
+            help='Show what would be done without actually updating'
+        )
+    
+    def handle(self, *args, **options):
+        jobs = Job.objects.filter(source__isnull=True)
+        
+        updated_count = 0
+        
+        for job in jobs:
+            if 'pracuj.pl' in job.url:
+                source = "Pracuj.pl"
+            elif 'nofluffjobs.com' in job.url:
+                source = "NoFluffJobs"
+            elif 'justjoin.it' in job.url:
+                source = "JustJoinIt"
+            else:
+                continue
+            
+            if options['dry_run']:
+                self.stdout.write(f"Would update ID:{job.id}-{job.url.split('.')[1]} to source {source}")
+            else:
+                job.source = source
+                job.save()
+            updated_count += 1
+            
+        action = 'Would update' if options['dry_run'] else 'Updated'
+        self.stdout.write(self.style.SUCCESS(f'{action} {updated_count} jobs'))
+            
+
+==================================================
+
+File: jobs/utils/salary_standardizer.py
+---------------------------------------
+import re
+
+
+def standardize_salary(salary: str) -> str:
+    """
+    Standardizes salary format and converts hourly to monthly if needed.
+    """
+    try:
+        min_num, max_num = average_salary(salary)
+        # Check if it's hourly (shorter numbers likely mean hourly rate)
+        if len(str(min_num)) <= 3:
+            min_num *= 168
+            max_num *= 168
+            
+        # Format with thousands separator
+        min_formatted = f"{int(min_num):,}".replace(",", " ")
+        max_formatted = f"{int(max_num):,}".replace(",", " ")
+        
+        if min_formatted == max_formatted:
+            return f"{min_formatted} PLN"
+        
+        return f"{min_formatted} - {max_formatted} PLN"
+    
+    except (IndexError, ValueError):
+        return salary
+
+
+    
+def average_salary(salary):
+    if not salary:
+        return ""
+    
+    cleaned = ' '.join(salary.split())
+    cleaned = re.sub(r',\d+', '', cleaned)
+    
+    # Remove "PLN" and split on hyphen
+    salary_part = cleaned.replace("PLN", "").strip()
+    
+    if "-" in salary_part:
+        # Handle range format
+        parts = salary_part.split("-")
+        min_val = parts[0].strip().replace(" ", "")
+        max_val = parts[1].strip().replace(" ", "")
+        
+        min_num = int(min_val)
+        max_num = int(max_val)
+        
+    else:
+        min_num = int(salary_part.strip().replace(" ", ""))
+        max_num = min_num
+    
+    return min_num, max_num
+    
+
+
+==================================================
+
